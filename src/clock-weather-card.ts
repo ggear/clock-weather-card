@@ -362,8 +362,8 @@ export class ClockWeatherCard extends LitElement {
       <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size: ${(maxTempChars * 0.5)}rem;">
         ${this.renderText(displayText)}
         ${this.renderIcon(weatherIcon)}
-        ${this.renderText(this.toConfiguredTempWithUnit(tempUnit, minTempDay), 'right')}
-        ${this.renderForecastTemperatureBar(minTemp, maxTemp, minTempDay, maxTempDay, showDot, clampedCurrentTemp, temperatureUnit)}
+        ${this.renderText(this.toConfiguredTempWithUnit(tempUnit, hourly ? maxTempDay : minTempDay), 'right')}
+        ${this.renderForecastTemperatureBar(minTemp, maxTemp, hourly ? maxTempDay : minTempDay, maxTempDay, showDot, clampedCurrentTemp, temperatureUnit)}
         ${this.renderText(this.toConfiguredTempWithUnit(tempUnit, maxTempDay))}
       </clock-weather-card-forecast-row>
     `
