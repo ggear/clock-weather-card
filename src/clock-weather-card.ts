@@ -217,7 +217,7 @@ export class ClockWeatherCard extends LitElement {
     const aqiTextColor = this.getAqiTextColor(aqi)
     const humidity = roundIfNotNull(this.getCurrentHumidity())
     const iconType = this.config.weather_icon_type
-    const icon = this.toIcon(state, iconType, false, this.getIconAnimationKind())
+    const icon = this.toIcon(state, iconType, undefined, this.getIconAnimationKind())
     const weatherString = this.localize(`weather.${state}`)
     const localizedTemp = temp !== null ? this.toConfiguredTempWithUnit(tempUnit, temp) : null
     const localizedHumidity = humidity !== null ? `${humidity}% ${this.localize('misc.humidity')}` : null
@@ -275,7 +275,8 @@ export class ClockWeatherCard extends LitElement {
 
   private renderForecastItem (forecast: MergedWeatherForecast, minTemp: number, maxTemp: number, currentTemp: number | null, temperatureUnit: TemperatureUnit, hourly: boolean, displayText: string, maxColOneChars: number): TemplateResult {
     const weatherState = forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition
-    const weatherIcon = this.toIcon(weatherState, 'fill', true, 'static')
+    const daytime: 'day' | 'night' | undefined = hourly ? (this.isHourDaytime(forecast.datetime.hour) ? 'day' : 'night') : 'day'
+    const weatherIcon = this.toIcon(weatherState, 'fill', daytime, 'static')
     const tempUnit = this.getWeather().attributes.temperature_unit
     const isNow = hourly ? DateTime.now().hour === forecast.datetime.hour : DateTime.now().day === forecast.datetime.day
     const minTempDay = Math.round(isNow && currentTemp !== null ? Math.min(currentTemp, forecast.templow) : forecast.templow)
@@ -470,8 +471,8 @@ export class ClockWeatherCard extends LitElement {
     }
   }
 
-  private toIcon (weatherState: string, type: 'fill' | 'line', forceDay: boolean, kind: 'static' | 'animated'): string {
-    const daytime = forceDay ? 'day' : this.getSun()?.state === 'below_horizon' ? 'night' : 'day'
+  private toIcon (weatherState: string, type: 'fill' | 'line', daytimeOverride: 'day' | 'night' | undefined, kind: 'static' | 'animated'): string {
+    const daytime = daytimeOverride ?? (this.getSun()?.state === 'below_horizon' ? 'night' : 'day')
     const iconMap = kind === 'animated' ? animatedIcons : staticIcons
     const icon = iconMap[type][weatherState]
     return icon?.[daytime] || icon
@@ -558,6 +559,26 @@ export class ClockWeatherCard extends LitElement {
 
   private getSun (): HassEntityBase | undefined {
     return this.hass.states[this.config.sun_entity]
+  }
+
+  private isHourDaytime (hour: number): boolean {
+    let sunriseHour = 6
+    let sunsetHour = 18
+    const sun = this.getSun()
+    if (sun) {
+      const attrs = sun.attributes as Record<string, unknown>
+      const risingStr = attrs.next_rising as string | undefined
+      const settingStr = attrs.next_setting as string | undefined
+      if (risingStr && settingStr) {
+        const rising = DateTime.fromISO(risingStr).toLocal()
+        const setting = DateTime.fromISO(settingStr).toLocal()
+        if (rising.isValid && setting.isValid && rising.hour < (setting.minute > 0 || setting.second > 0 ? setting.hour + 1 : setting.hour)) {
+          sunriseHour = rising.hour
+          sunsetHour = setting.minute > 0 || setting.second > 0 ? setting.hour + 1 : setting.hour
+        }
+      }
+    }
+    return hour >= sunriseHour && hour < sunsetHour
   }
 
   private getLocale (): string {
