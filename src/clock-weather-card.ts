@@ -499,7 +499,7 @@ export class ClockWeatherCard extends LitElement {
     const moveRight = globalMax === 0 ? 0 : dayMin / globalMax
     const gradient = this.createRainGradientString(dayMin, dayMax, globalMax)
     const clampedRain = currentRain !== null ? Math.max(dayMin, Math.min(dayMax, currentRain)) : null
-    const showDot = isToday && showBar && clampedRain !== null
+    const showDot = isToday && clampedRain !== null
 
     return html`
       <forecast-temperature-bar>
@@ -510,14 +510,14 @@ export class ClockWeatherCard extends LitElement {
             >
               ${showDot ? this.renderForecastCurrentTemp(dayMin, dayMax, clampedRain) : ''}
             </forecast-temperature-bar-range>`
-          : ''}
+          : html`${showDot ? this.renderForecastCurrentTemp(0, globalMax, clampedRain) : ''}`}
       </forecast-temperature-bar>
     `
   }
 
   private createRainGradientString (dayMin: number, dayMax: number, globalMax: number): string {
-    const lightBlue = new Rgb(164, 195, 210)
-    const darkBlue = new Rgb(0, 60, 98)
+    const lightBlue = new Rgb(174, 210, 230)
+    const darkBlue = new Rgb(40, 120, 180)
 
     function interpolate (ratio: number): Rgb {
       return new Rgb(
@@ -915,20 +915,27 @@ export class ClockWeatherCard extends LitElement {
     }, {})
 
     const merged = Object.values(agg)
-      .reduce((agg: MergedWeatherForecast[], forecasts) => {
+      .reduce((agg: Array<{ forecast: MergedWeatherForecast, hadTemplow: boolean }>, forecasts) => {
         if (forecasts.length === 0) return agg
         const avg = this.calculateAverageForecast(forecasts)
-        agg.push(avg)
+        const hadTemplow = forecasts.some((f) => f.templow !== null && f.templow !== undefined)
+        agg.push({ forecast: avg, hadTemplow })
         return agg
       }, [])
-      .sort((a, b) => a.datetime.toMillis() - b.datetime.toMillis())
+      .sort((a, b) => a.forecast.datetime.toMillis() - b.forecast.datetime.toMillis())
+
+    if (!hourly && merged.length >= 2 && !merged[0].hadTemplow) {
+      merged[0].forecast.templow = merged[1].forecast.templow
+    }
+
+    const results = merged.map((m) => m.forecast)
 
     if (hourly && this.config.hide_current_hourly_forecast) {
       const nextHour = DateTime.now().plus({ hours: 1 }).startOf('hour')
-      return merged.filter((f) => f.datetime >= nextHour).slice(0, maxRowsCount)
+      return results.filter((f) => f.datetime >= nextHour).slice(0, maxRowsCount)
     }
 
-    return merged.slice(0, maxRowsCount)
+    return results.slice(0, maxRowsCount)
   }
 
   private toZonedDate (date: DateTime): DateTime {
