@@ -454,6 +454,7 @@ export class ClockWeatherCard extends LitElement {
       weather_icon_type: config.weather_icon_type ?? 'line',
       forecast_rows: config.forecast_rows ?? 5,
       hourly_forecast: config.hourly_forecast ?? false,
+      hide_current_hourly_forecast: config.hide_current_hourly_forecast ?? false,
       animated_icon: config.animated_icon ?? true,
       time_format: config.time_format?.toString() as '12' | '24' | undefined,
       time_pattern: config.time_pattern ?? undefined,
@@ -670,7 +671,7 @@ export class ClockWeatherCard extends LitElement {
       return forecasts
     }, {})
 
-    return Object.values(agg)
+    const merged = Object.values(agg)
       .reduce((agg: MergedWeatherForecast[], forecasts) => {
         if (forecasts.length === 0) return agg
         const avg = this.calculateAverageForecast(forecasts)
@@ -678,7 +679,13 @@ export class ClockWeatherCard extends LitElement {
         return agg
       }, [])
       .sort((a, b) => a.datetime.toMillis() - b.datetime.toMillis())
-      .slice(0, maxRowsCount)
+
+    if (hourly && this.config.hide_current_hourly_forecast) {
+      const nextHour = DateTime.now().plus({ hours: 1 }).startOf('hour')
+      return merged.filter((f) => f.datetime >= nextHour).slice(0, maxRowsCount)
+    }
+
+    return merged.slice(0, maxRowsCount)
   }
 
   private toZonedDate (date: DateTime): DateTime {
