@@ -259,14 +259,15 @@ export class ClockWeatherCard extends LitElement {
     const sensorMin = this.getSensorTemp(this.config.temperature_sensor_min)
     const sensorMax = this.getSensorTemp(this.config.temperature_sensor_max)
 
-    const minTemps = forecasts.map((f) => f.templow)
-    const maxTemps = forecasts.map((f) => f.temperature)
+    const allForecasts = this.isLegacyWeather() ? this.getWeather().attributes.forecast ?? [] : this.forecasts ?? []
+    const allMinTemps = allForecasts.map((f) => f.templow ?? f.temperature ?? 0)
+    const allMaxTemps = allForecasts.map((f) => f.temperature ?? 0)
     if (currentTemp !== null) {
-      minTemps.push(currentTemp)
-      maxTemps.push(currentTemp)
+      allMinTemps.push(currentTemp)
+      allMaxTemps.push(currentTemp)
     }
-    const computedMin = Math.round(min(minTemps))
-    const computedMax = Math.round(max(maxTemps))
+    const computedMin = Math.round(min(allMinTemps))
+    const computedMax = Math.round(max(allMaxTemps))
     const minTemp = Math.min(sensorMin !== null ? Math.round(sensorMin) : computedMin, computedMin)
     const maxTemp = Math.max(sensorMax !== null ? Math.round(sensorMax) : computedMax, computedMax)
 
