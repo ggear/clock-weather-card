@@ -64,7 +64,8 @@ export default css`
     grid-template-columns: var(--col-one-size) 2rem var(--temp-col-size, 2.1rem) auto var(--temp-col-size, 2.1rem);
     align-items: center;
     column-gap: 0.5rem;
-    padding-left: 0.5rem;
+    padding-left: 1rem;
+    padding-right: 0.5rem;
   }
 
   forecast-text {
@@ -130,5 +131,15 @@ export default css`
   aqi {
     padding: 2px;
     border-radius: 5px;
+  }
+
+  .rain-unit {
+    font-size: 0.6em;
+    opacity: 0.7;
+  }
+
+  .rain-unit-large {
+    font-size: 0.5em;
+    opacity: 0.7;
   }
 `

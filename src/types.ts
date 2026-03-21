@@ -9,6 +9,8 @@ declare global {
   }
 }
 
+export type ForecastType = 'temp_daily' | 'temp_hourly' | 'rain_daily'
+
 export interface ClockWeatherCardConfig extends LovelaceCardConfig {
   entity: string
   title?: string
@@ -25,6 +27,7 @@ export interface ClockWeatherCardConfig extends LovelaceCardConfig {
   hide_today_section?: boolean
   hide_forecast_section?: boolean
   show_humidity?: boolean
+  forecast_type?: ForecastType
   hourly_forecast?: boolean
   hide_current_hourly_forecast?: boolean
   hide_clock?: boolean
@@ -36,6 +39,8 @@ export interface ClockWeatherCardConfig extends LovelaceCardConfig {
   aqi_sensor?: string
   temperature_sensor_min?: string | number
   temperature_sensor_max?: string | number
+  rain_sensor?: string
+  rain_sensor_prefix?: string
 }
 
 export interface MergedClockWeatherCardConfig extends LovelaceCardConfig {
@@ -54,7 +59,7 @@ export interface MergedClockWeatherCardConfig extends LovelaceCardConfig {
   hide_today_section: boolean
   hide_forecast_section: boolean
   show_humidity: boolean
-  hourly_forecast: boolean
+  forecast_type: ForecastType
   hide_current_hourly_forecast: boolean
   hide_clock: boolean
   hide_date: boolean
@@ -65,6 +70,8 @@ export interface MergedClockWeatherCardConfig extends LovelaceCardConfig {
   aqi_sensor?: string
   temperature_sensor_min?: string | number
   temperature_sensor_max?: string | number
+  rain_sensor?: string
+  rain_sensor_prefix?: string
 }
 
 export const enum WeatherEntityFeature {

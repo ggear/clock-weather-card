@@ -12,6 +12,7 @@ import {
 
 import {
   type ClockWeatherCardConfig,
+  type ForecastType,
   type MergedClockWeatherCardConfig,
   type MergedWeatherForecast,
   Rgb,
@@ -133,6 +134,20 @@ export class ClockWeatherCard extends LitElement {
       if (oldSun !== newSun) {
         return true
       }
+
+      if (this.config.forecast_type === 'rain_daily') {
+        if (this.config.rain_sensor && oldHass.states[this.config.rain_sensor] !== this.hass.states[this.config.rain_sensor]) {
+          return true
+        }
+        if (this.config.rain_sensor_prefix) {
+          for (let i = 0; i < this.config.forecast_rows; i++) {
+            for (const suffix of ['amount_min_', 'amount_max_', 'chance_']) {
+              const id = `${this.config.rain_sensor_prefix}${suffix}${i}`
+              if (oldHass.states[id] !== this.hass.states[id]) return true
+            }
+          }
+        }
+      }
     }
 
     return hasConfigOrEntityChanged(this, changedProps, false)
@@ -176,10 +191,16 @@ export class ClockWeatherCard extends LitElement {
               ${safeRender(() => this.renderToday())}
             </clock-weather-card-today>`
         : ''}
-          ${showForecast
+          ${showForecast && this.config.forecast_type !== 'rain_daily'
         ? html`
             <clock-weather-card-forecast>
               ${safeRender(() => this.renderForecast())}
+            </clock-weather-card-forecast>`
+        : ''}
+          ${this.config.forecast_type === 'rain_daily' && this.config.rain_sensor_prefix
+        ? html`
+            <clock-weather-card-forecast>
+              ${safeRender(() => this.renderRainForecast())}
             </clock-weather-card-forecast>`
         : ''}
         </div>
@@ -207,6 +228,13 @@ export class ClockWeatherCard extends LitElement {
   }
 
   private renderToday (): TemplateResult {
+    if (this.config.forecast_type === 'rain_daily') {
+      return this.renderTodayRain()
+    }
+    return this.renderTodayTemp()
+  }
+
+  private renderTodayTemp (): TemplateResult {
     const weather = this.getWeather()
     const state = weather.state
     const temp = this.config.show_decimal ? this.getCurrentTemperature() : roundIfNotNull(this.getCurrentTemperature())
@@ -247,11 +275,48 @@ export class ClockWeatherCard extends LitElement {
       </clock-weather-card-today-right>`
   }
 
+  private renderTodayRain (): TemplateResult {
+    const weather = this.getWeather()
+    const state = weather.state
+    const iconType = this.config.weather_icon_type
+    const icon = this.toIcon(state, iconType, undefined, this.getIconAnimationKind())
+    const chance = this.config.rain_sensor_prefix ? this.getNumericState(`${this.config.rain_sensor_prefix}chance_0`) ?? 0 : 0
+    const rainDescription = this.getRainDescription(chance)
+    const currentRain = this.getCurrentRainValue()
+
+    return html`
+      <clock-weather-card-today-left>
+        <img class="grow-img" src=${icon} />
+      </clock-weather-card-today-left>
+      <clock-weather-card-today-right>
+        <clock-weather-card-today-right-wrap>
+          <clock-weather-card-today-right-wrap-top>
+            ${rainDescription}
+          </clock-weather-card-today-right-wrap-top>
+          <clock-weather-card-today-right-wrap-center style="${currentRain === null || currentRain === 0 ? 'justify-content: end;' : ''}">
+            ${currentRain !== null && currentRain > 0
+              ? html`${currentRain} <span class="rain-unit-large">mm</span>`
+              : 'Nil'}
+          </clock-weather-card-today-right-wrap-center>
+          <clock-weather-card-today-right-wrap-bottom>
+            ${this.config.hide_date ? '' : this.date()}
+          </clock-weather-card-today-right-wrap-bottom>
+        </clock-weather-card-today-right-wrap>
+      </clock-weather-card-today-right>`
+  }
+
+  private getRainDescription (chance: number): string {
+    if (chance === 0) return 'No chance of rain'
+    if (chance <= 30) return 'Low chance of rain'
+    if (chance <= 60) return 'Medium chance of rain'
+    return 'High chance of rain'
+  }
+
   private renderForecast (): TemplateResult[] {
     const weather = this.getWeather()
     const currentTemp = roundIfNotNull(this.getCurrentTemperature())
     const maxRowsCount = this.config.forecast_rows
-    const hourly = this.config.hourly_forecast
+    const hourly = this.config.forecast_type === 'temp_hourly'
     const temperatureUnit = weather.attributes.temperature_unit
 
     const forecasts = this.mergeForecasts(maxRowsCount, hourly)
@@ -352,6 +417,131 @@ export class ClockWeatherCard extends LitElement {
         </forecast-temperature-bar-current-indicator-dot>
       </forecast-temperature-bar-current-indicator>
     `
+  }
+
+  private getCurrentRainValue (): number | null {
+    let val: number | undefined
+    if (this.config.rain_sensor) {
+      const sensor = this.hass.states[this.config.rain_sensor]
+      val = sensor?.state ? parseFloat(sensor.state) : undefined
+    }
+    if (val === undefined && this.config.rain_sensor_prefix) {
+      const sensor = this.hass.states[`${this.config.rain_sensor_prefix}amount_max_0`]
+      val = sensor?.state ? parseFloat(sensor.state) : undefined
+    }
+    if (val !== undefined && !isNaN(val)) return val
+    return null
+  }
+
+  private renderRainForecast (): TemplateResult[] {
+    const prefix = this.config.rain_sensor_prefix
+    if (!prefix) return []
+
+    const maxRowsCount = this.config.forecast_rows
+
+    const currentRain = this.config.rain_sensor ? this.getNumericState(this.config.rain_sensor) : null
+
+    const rainDays: Array<{ min: number, max: number, chance: number }> = []
+    for (let i = 0; i < maxRowsCount; i++) {
+      const minVal = this.getNumericState(`${prefix}amount_min_${i}`)
+      const maxVal = this.getNumericState(`${prefix}amount_max_${i}`)
+      const chanceVal = this.getNumericState(`${prefix}chance_${i}`)
+      rainDays.push({ min: minVal ?? 0, max: maxVal ?? 0, chance: chanceVal ?? 0 })
+    }
+
+    const globalMax = Math.max(...rainDays.map(d => d.max), currentRain ?? 0, 1)
+
+    const forecasts = this.mergeForecasts(maxRowsCount, false)
+    const displayTexts = forecasts
+      .map(f => f.datetime)
+      .map(d => this.localize(`day.${d.weekday}`))
+    const maxColOneChars = this.getMaxColOneChars()
+    const allForecasts = this.isLegacyWeather() ? this.getWeather().attributes.forecast ?? [] : this.forecasts ?? []
+    const allMinTemps = allForecasts.map((f) => f.templow ?? f.temperature ?? 0)
+    const allMaxTemps = allForecasts.map((f) => f.temperature ?? 0)
+    const tempMin = allMinTemps.length ? Math.round(Math.min(...allMinTemps)) : 0
+    const tempMax = allMaxTemps.length ? Math.round(Math.max(...allMaxTemps)) : 0
+    const maxValueChars = this.getMaxTempChars(tempMin, tempMax)
+
+    return rainDays.map((day, i) => safeRender(() =>
+      this.renderRainForecastItem(day, globalMax, forecasts[i], displayTexts[i] ?? '', maxColOneChars, maxValueChars, i === 0, currentRain)
+    ))
+  }
+
+  private renderRainForecastItem (
+    day: { min: number, max: number, chance: number },
+    globalMax: number,
+    forecast: MergedWeatherForecast | undefined,
+    displayText: string,
+    maxColOneChars: number,
+    maxRainChars: number,
+    isToday: boolean,
+    currentRain: number | null
+  ): TemplateResult {
+    const weatherState = forecast ? (forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition) : 'rainy'
+    const weatherIcon = this.toIcon(weatherState, 'fill', 'day', 'static')
+    const chanceText = `${Math.round(day.chance)}%`
+
+    return html`
+      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size: ${(maxRainChars * 0.5)}rem;">
+        ${this.renderText(displayText)}
+        ${this.renderIcon(weatherIcon)}
+        ${this.renderText(chanceText, 'right')}
+        ${this.renderRainBar(globalMax, day.min, day.max, isToday, currentRain, day.chance)}
+        <forecast-text>${day.max} <span class="rain-unit">mm</span></forecast-text>
+      </clock-weather-card-forecast-row>
+    `
+  }
+
+  private renderRainBar (globalMax: number, dayMin: number, dayMax: number, isToday: boolean, currentRain: number | null, chance: number): TemplateResult {
+    const showBar = chance > 0 && dayMax > 0
+    const { startPercent, endPercent } = this.calculateBarRangePercents(0, globalMax, dayMin, dayMax)
+    const moveRight = globalMax === 0 ? 0 : dayMin / globalMax
+    const gradient = this.createRainGradientString(dayMin, dayMax, globalMax)
+    const clampedRain = currentRain !== null ? Math.max(dayMin, Math.min(dayMax, currentRain)) : null
+    const showDot = isToday && showBar && clampedRain !== null
+
+    return html`
+      <forecast-temperature-bar>
+        <forecast-temperature-bar-background> </forecast-temperature-bar-background>
+        ${showBar
+          ? html`<forecast-temperature-bar-range
+              style="--move-right: ${moveRight.toFixed(2)}; --start-percent: ${startPercent.toFixed(2)}%; --end-percent: ${endPercent.toFixed(2)}%; --gradient: ${gradient};"
+            >
+              ${showDot ? this.renderForecastCurrentTemp(dayMin, dayMax, clampedRain) : ''}
+            </forecast-temperature-bar-range>`
+          : ''}
+      </forecast-temperature-bar>
+    `
+  }
+
+  private createRainGradientString (dayMin: number, dayMax: number, globalMax: number): string {
+    const lightBlue = new Rgb(164, 195, 210)
+    const darkBlue = new Rgb(0, 60, 98)
+
+    function interpolate (ratio: number): Rgb {
+      return new Rgb(
+        Math.round(lightBlue.r + ratio * (darkBlue.r - lightBlue.r)),
+        Math.round(lightBlue.g + ratio * (darkBlue.g - lightBlue.g)),
+        Math.round(lightBlue.b + ratio * (darkBlue.b - lightBlue.b))
+      )
+    }
+
+    if (dayMin === dayMax) {
+      const color = interpolate(globalMax > 0 ? dayMin / globalMax : 0)
+      return `${color.toRgbString()} 0%, ${color.toRgbString()} 100%`
+    }
+
+    const colorMin = interpolate(globalMax > 0 ? dayMin / globalMax : 0)
+    const colorMax = interpolate(globalMax > 0 ? dayMax / globalMax : 0)
+    return `${colorMin.toRgbString()} 0%, ${colorMax.toRgbString()} 100%`
+  }
+
+  private getNumericState (entityId: string): number | null {
+    const sensor = this.hass.states[entityId]
+    const val = sensor?.state ? parseFloat(sensor.state) : undefined
+    if (val !== undefined && !isNaN(val)) return val
+    return null
   }
 
   // https://lit.dev/docs/components/styles/
@@ -464,7 +654,7 @@ export class ClockWeatherCard extends LitElement {
       humidity_sensor: config.humidity_sensor,
       weather_icon_type: config.weather_icon_type ?? 'line',
       forecast_rows: config.forecast_rows ?? 5,
-      hourly_forecast: config.hourly_forecast ?? false,
+      forecast_type: this.resolveForecastType(config),
       hide_current_hourly_forecast: config.hide_current_hourly_forecast ?? false,
       animated_icon: config.animated_icon ?? true,
       time_format: config.time_format?.toString() as '12' | '24' | undefined,
@@ -481,8 +671,16 @@ export class ClockWeatherCard extends LitElement {
       apparent_sensor: config.apparent_sensor ?? undefined,
       aqi_sensor: config.aqi_sensor ?? undefined,
       temperature_sensor_min: config.temperature_sensor_min ?? undefined,
-      temperature_sensor_max: config.temperature_sensor_max ?? undefined
+      temperature_sensor_max: config.temperature_sensor_max ?? undefined,
+      rain_sensor: config.rain_sensor ?? undefined,
+      rain_sensor_prefix: config.rain_sensor_prefix ?? undefined
     }
+  }
+
+  private resolveForecastType (config: ClockWeatherCardConfig): ForecastType {
+    if (config.forecast_type) return config.forecast_type
+    if (config.hourly_forecast) return 'temp_hourly'
+    return 'temp_daily'
   }
 
   private toIcon (weatherState: string, type: 'fill' | 'line', daytimeOverride: 'day' | 'night' | undefined, kind: 'static' | 'animated'): string {
@@ -643,8 +841,16 @@ export class ClockWeatherCard extends LitElement {
 
   private getMaxTempChars (minTemp: number, maxTemp: number): number {
     const unit = this.getConfiguredTemperatureUnit()
-    const samples = [minTemp, maxTemp, -minTemp, -maxTemp].map(t => `${t}${unit}`.length)
-    return Math.max(...samples)
+    const tempSamples = [minTemp, maxTemp, -minTemp, -maxTemp].map(t => `${t}${unit}`.length)
+    const rainSamples: number[] = []
+    if (this.config.rain_sensor_prefix) {
+      for (let i = 0; i < this.config.forecast_rows; i++) {
+        const maxVal = this.getNumericState(`${this.config.rain_sensor_prefix}amount_max_${i}`) ?? 0
+        const chanceVal = this.getNumericState(`${this.config.rain_sensor_prefix}chance_${i}`) ?? 0
+        rainSamples.push(`${maxVal} mm`.length, `${Math.round(chanceVal)}%`.length)
+      }
+    }
+    return Math.max(...tempSamples, ...rainSamples)
   }
 
   private getIconAnimationKind (): 'static' | 'animated' {
@@ -844,7 +1050,7 @@ export class ClockWeatherCard extends LitElement {
   private determineForecastType (): 'hourly' | 'daily' | 'hourly_not_supported' {
     const supportsDaily = this.supportsFeature(WeatherEntityFeature.FORECAST_DAILY)
     const supportsHourly = this.supportsFeature(WeatherEntityFeature.FORECAST_HOURLY)
-    const hourly = this.config.hourly_forecast
+    const hourly = this.config.forecast_type === 'temp_hourly'
     if (supportsDaily && supportsHourly) {
       return hourly ? 'hourly' : 'daily'
     } else if (hourly && supportsHourly) {
