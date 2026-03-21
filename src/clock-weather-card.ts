@@ -268,12 +268,13 @@ export class ClockWeatherCard extends LitElement {
     const displayTexts = forecasts
       .map(f => f.datetime)
       .map(d => hourly ? this.time(d) : this.localize(`day.${d.weekday}`))
-    const maxColOneChars = displayTexts.length ? max(displayTexts.map(t => t.length)) : 0
+    const maxColOneChars = this.getMaxColOneChars()
+    const maxTempChars = this.getMaxTempChars(minTemp, maxTemp)
 
-    return forecasts.map((forecast, i) => safeRender(() => this.renderForecastItem(forecast, minTemp, maxTemp, currentTemp, temperatureUnit, hourly, displayTexts[i], maxColOneChars)))
+    return forecasts.map((forecast, i) => safeRender(() => this.renderForecastItem(forecast, minTemp, maxTemp, currentTemp, temperatureUnit, hourly, displayTexts[i], maxColOneChars, maxTempChars)))
   }
 
-  private renderForecastItem (forecast: MergedWeatherForecast, minTemp: number, maxTemp: number, currentTemp: number | null, temperatureUnit: TemperatureUnit, hourly: boolean, displayText: string, maxColOneChars: number): TemplateResult {
+  private renderForecastItem (forecast: MergedWeatherForecast, minTemp: number, maxTemp: number, currentTemp: number | null, temperatureUnit: TemperatureUnit, hourly: boolean, displayText: string, maxColOneChars: number, maxTempChars: number): TemplateResult {
     const weatherState = forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition
     const daytime: 'day' | 'night' | undefined = hourly ? (this.isHourDaytime(forecast.datetime.hour) ? 'day' : 'night') : 'day'
     const weatherIcon = this.toIcon(weatherState, 'fill', daytime, 'static')
@@ -283,7 +284,7 @@ export class ClockWeatherCard extends LitElement {
     const maxTempDay = Math.round(isNow && currentTemp !== null ? Math.max(currentTemp, forecast.temperature) : forecast.temperature)
 
     return html`
-      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem;">
+      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size: ${(maxTempChars * 0.5)}rem;">
         ${this.renderText(displayText)}
         ${this.renderIcon(weatherIcon)}
         ${this.renderText(this.toConfiguredTempWithUnit(tempUnit, minTempDay), 'right')}
@@ -608,6 +609,18 @@ export class ClockWeatherCard extends LitElement {
     }
 
     return this.toZonedDate(date).toFormat('t')
+  }
+
+  private getMaxColOneChars (): number {
+    const dayLengths = [1, 2, 3, 4, 5, 6, 7].map(d => this.localize(`day.${d}`).length)
+    const sampleTime = this.time(DateTime.now())
+    return Math.max(...dayLengths, sampleTime.length)
+  }
+
+  private getMaxTempChars (minTemp: number, maxTemp: number): number {
+    const unit = this.getConfiguredTemperatureUnit()
+    const samples = [minTemp, maxTemp, -minTemp, -maxTemp].map(t => `${t}${unit}`.length)
+    return Math.max(...samples)
   }
 
   private getIconAnimationKind (): 'static' | 'animated' {
