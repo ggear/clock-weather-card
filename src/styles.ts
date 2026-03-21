@@ -110,7 +110,7 @@ export default css`
     background: linear-gradient(to right, var(--gradient));
     overflow: hidden;
     min-width: var(--bar-height);
-    margin-left: calc(var(--move-right) * -1 * var(--bar-height));
+    margin-left: calc(var(--move-right) * -1 * max(var(--bar-height) - (var(--end-percent) - var(--start-percent)), 0px));
   }
 
   forecast-temperature-bar-current-indicator {
