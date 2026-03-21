@@ -256,14 +256,19 @@ export class ClockWeatherCard extends LitElement {
 
     const forecasts = this.mergeForecasts(maxRowsCount, hourly)
 
+    const sensorMin = this.getSensorTemp(this.config.temperature_sensor_min)
+    const sensorMax = this.getSensorTemp(this.config.temperature_sensor_max)
+
     const minTemps = forecasts.map((f) => f.templow)
     const maxTemps = forecasts.map((f) => f.temperature)
     if (currentTemp !== null) {
       minTemps.push(currentTemp)
       maxTemps.push(currentTemp)
     }
-    const minTemp = Math.round(min(minTemps))
-    const maxTemp = Math.round(max(maxTemps))
+    const computedMin = Math.round(min(minTemps))
+    const computedMax = Math.round(max(maxTemps))
+    const minTemp = Math.min(sensorMin !== null ? Math.round(sensorMin) : computedMin, computedMin)
+    const maxTemp = Math.max(sensorMax !== null ? Math.round(sensorMax) : computedMax, computedMax)
 
     const displayTexts = forecasts
       .map(f => f.datetime)
@@ -280,15 +285,18 @@ export class ClockWeatherCard extends LitElement {
     const weatherIcon = this.toIcon(weatherState, 'fill', daytime, 'static')
     const tempUnit = this.getWeather().attributes.temperature_unit
     const isNow = hourly ? DateTime.now().hour === forecast.datetime.hour : DateTime.now().day === forecast.datetime.day
-    const minTempDay = Math.round(isNow && currentTemp !== null ? Math.min(currentTemp, forecast.templow) : forecast.templow)
-    const maxTempDay = Math.round(isNow && currentTemp !== null ? Math.max(currentTemp, forecast.temperature) : forecast.temperature)
+    const minTempDayRaw = Math.round(isNow && currentTemp !== null ? Math.min(currentTemp, forecast.templow) : forecast.templow)
+    const maxTempDayRaw = Math.round(isNow && currentTemp !== null ? Math.max(currentTemp, forecast.temperature) : forecast.temperature)
+    const minTempDay = Math.max(minTemp, Math.min(maxTemp, minTempDayRaw))
+    const maxTempDay = Math.max(minTemp, Math.min(maxTemp, maxTempDayRaw))
+    const clampedCurrentTemp = currentTemp !== null ? Math.max(minTemp, Math.min(maxTemp, Math.round(currentTemp))) : null
 
     return html`
       <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size: ${(maxTempChars * 0.5)}rem;">
         ${this.renderText(displayText)}
         ${this.renderIcon(weatherIcon)}
         ${this.renderText(this.toConfiguredTempWithUnit(tempUnit, minTempDay), 'right')}
-        ${this.renderForecastTemperatureBar(minTemp, maxTemp, minTempDay, maxTempDay, isNow, currentTemp, temperatureUnit)}
+        ${this.renderForecastTemperatureBar(minTemp, maxTemp, minTempDay, maxTempDay, isNow, clampedCurrentTemp, temperatureUnit)}
         ${this.renderText(this.toConfiguredTempWithUnit(tempUnit, maxTempDay))}
       </clock-weather-card-forecast-row>
     `
@@ -469,7 +477,9 @@ export class ClockWeatherCard extends LitElement {
       time_zone: config.time_zone ?? undefined,
       show_decimal: config.show_decimal ?? false,
       apparent_sensor: config.apparent_sensor ?? undefined,
-      aqi_sensor: config.aqi_sensor ?? undefined
+      aqi_sensor: config.aqi_sensor ?? undefined,
+      temperature_sensor_min: config.temperature_sensor_min ?? undefined,
+      temperature_sensor_max: config.temperature_sensor_max ?? undefined
     }
   }
 
@@ -500,6 +510,18 @@ export class ClockWeatherCard extends LitElement {
 
     // return weather temperature if above code could not extract temperature from temperature_sensor
     return this.getWeather().attributes.temperature ?? null
+  }
+
+  private getSensorTemp (value: string | number | undefined): number | null {
+    if (value == null) return null
+    if (typeof value === 'number') return value
+    const sensor = this.hass.states[value] as TemperatureSensor | undefined
+    const temp = sensor?.state ? parseFloat(sensor.state) : undefined
+    const unit = sensor?.attributes.unit_of_measurement ?? this.getConfiguredTemperatureUnit()
+    if (temp !== undefined && !isNaN(temp)) {
+      return this.toConfiguredTempWithoutUnit(unit, temp)
+    }
+    return null
   }
 
   private getCurrentHumidity (): number | null {
