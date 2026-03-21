@@ -285,6 +285,7 @@ export class ClockWeatherCard extends LitElement {
     const weatherIcon = this.toIcon(weatherState, 'fill', daytime, 'static')
     const tempUnit = this.getWeather().attributes.temperature_unit
     const isNow = hourly ? DateTime.now().hour === forecast.datetime.hour : DateTime.now().day === forecast.datetime.day
+    const showDot = isNow && !hourly
     const minTempDayRaw = Math.round(isNow && currentTemp !== null ? Math.min(currentTemp, forecast.templow) : forecast.templow)
     const maxTempDayRaw = Math.round(isNow && currentTemp !== null ? Math.max(currentTemp, forecast.temperature) : forecast.temperature)
     const minTempDay = Math.max(minTemp, Math.min(maxTemp, minTempDayRaw))
@@ -296,7 +297,7 @@ export class ClockWeatherCard extends LitElement {
         ${this.renderText(displayText)}
         ${this.renderIcon(weatherIcon)}
         ${this.renderText(this.toConfiguredTempWithUnit(tempUnit, minTempDay), 'right')}
-        ${this.renderForecastTemperatureBar(minTemp, maxTemp, minTempDay, maxTempDay, isNow, clampedCurrentTemp, temperatureUnit)}
+        ${this.renderForecastTemperatureBar(minTemp, maxTemp, minTempDay, maxTempDay, showDot, clampedCurrentTemp, temperatureUnit)}
         ${this.renderText(this.toConfiguredTempWithUnit(tempUnit, maxTempDay))}
       </clock-weather-card-forecast-row>
     `
