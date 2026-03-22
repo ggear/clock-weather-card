@@ -44,8 +44,8 @@ export default css`
 
   clock-weather-card-today-right-wrap-center {
     display: flex;
-    height: 3rem;
-    font-size: 2.5rem;
+    height: 2.4rem;
+    font-size: 2rem;
     white-space: nowrap;
     align-items: center;
     justify-content: center;
@@ -134,12 +134,12 @@ export default css`
     border-radius: 5px;
   }
 
-  .rain-unit {
+  .value-unit {
     font-size: 0.6em;
     opacity: 0.7;
   }
 
-  .rain-unit-large {
+  .value-unit-large {
     font-size: 0.5em;
     opacity: 0.7;
   }

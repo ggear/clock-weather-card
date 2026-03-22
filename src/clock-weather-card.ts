@@ -320,7 +320,7 @@ export class ClockWeatherCard extends LitElement {
           </clock-weather-card-today-right-wrap-top>
           <clock-weather-card-today-right-wrap-center style="justify-content: end;">
             ${currentRain !== null && currentRain > 0
-              ? html`${currentRain} <span class="rain-unit-large">mm</span>`
+              ? html`${currentRain} <span class="value-unit-large">mm</span>`
               : 'Nil'}
           </clock-weather-card-today-right-wrap-center>
           <clock-weather-card-today-right-wrap-bottom>
@@ -496,7 +496,7 @@ export class ClockWeatherCard extends LitElement {
         ${this.renderIcon(weatherIcon)}
         ${this.renderText(chanceText, 'right')}
         ${this.renderRainBar(globalMax, day.min, day.max, isToday, currentRain, day.chance)}
-        <forecast-text>${day.max} <span class="rain-unit">mm</span></forecast-text>
+        <forecast-text>${day.max} <span class="value-unit">mm</span></forecast-text>
       </clock-weather-card-forecast-row>
     `
   }
@@ -596,7 +596,7 @@ export class ClockWeatherCard extends LitElement {
             ${this.getTodayDescription(weatherString)}
           </clock-weather-card-today-right-wrap-top>
           <clock-weather-card-today-right-wrap-center style="justify-content: end;">
-            ${category}
+            ${category} UV
           </clock-weather-card-today-right-wrap-center>
           <clock-weather-card-today-right-wrap-bottom>
             ${this.config.hide_date ? '' : this.date()}
@@ -652,7 +652,7 @@ export class ClockWeatherCard extends LitElement {
         ${this.renderIcon(weatherIcon)}
         ${this.renderText(timeRange, 'right')}
         ${this.renderUvBar(day.startHour, day.endHour, day.maxIndex)}
-        <forecast-text>${day.maxIndex}</forecast-text>
+        <forecast-text>${day.maxIndex} UV</forecast-text>
       </clock-weather-card-forecast-row>
     `
   }
