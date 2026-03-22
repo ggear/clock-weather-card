@@ -135,6 +135,15 @@ export class ClockWeatherCard extends LitElement {
         return true
       }
 
+      if (this.config.forecast_type === 'uv_daily' && this.config.uv_sensor_prefix) {
+        for (let i = 0; i < this.config.forecast_rows; i++) {
+          for (const suffix of ['category_', 'max_index_', 'start_time_', 'end_time_', 'forecast_']) {
+            const id = `${this.config.uv_sensor_prefix}${suffix}${i}`
+            if (oldHass.states[id] !== this.hass.states[id]) return true
+          }
+        }
+      }
+
       if (this.config.forecast_type === 'rain_daily') {
         if (this.config.rain_sensor && oldHass.states[this.config.rain_sensor] !== this.hass.states[this.config.rain_sensor]) {
           return true
@@ -148,6 +157,10 @@ export class ClockWeatherCard extends LitElement {
           }
         }
       }
+    }
+
+    if (this.config.today_description_sensor && oldHass) {
+      if (oldHass.states[this.config.today_description_sensor] !== this.hass.states[this.config.today_description_sensor]) return true
     }
 
     return hasConfigOrEntityChanged(this, changedProps, false)
@@ -168,6 +181,9 @@ export class ClockWeatherCard extends LitElement {
 
     const showToday = !this.config.hide_today_section
     const showForecast = !this.config.hide_forecast_section
+    const { minTemp, maxTemp } = this.getGlobalTempRange()
+    const tempColSize = this.getMaxTempChars(minTemp, maxTemp) * 0.5
+    const todayRightPad = tempColSize + 1
     return html`
       <ha-card
         @action=${(e: ActionHandlerEvent) => { this.handleAction(e) }}
@@ -188,10 +204,10 @@ export class ClockWeatherCard extends LitElement {
           ${showToday
         ? html`
             <clock-weather-card-today>
-              ${safeRender(() => this.renderToday())}
+              ${safeRender(() => this.renderToday(todayRightPad))}
             </clock-weather-card-today>`
         : ''}
-          ${showForecast && this.config.forecast_type !== 'rain_daily'
+          ${showForecast && this.config.forecast_type !== 'rain_daily' && this.config.forecast_type !== 'uv_daily'
         ? html`
             <clock-weather-card-forecast>
               ${safeRender(() => this.renderForecast())}
@@ -201,6 +217,12 @@ export class ClockWeatherCard extends LitElement {
         ? html`
             <clock-weather-card-forecast>
               ${safeRender(() => this.renderRainForecast())}
+            </clock-weather-card-forecast>`
+        : ''}
+          ${this.config.forecast_type === 'uv_daily' && this.config.uv_sensor_prefix
+        ? html`
+            <clock-weather-card-forecast>
+              ${safeRender(() => this.renderUvForecast())}
             </clock-weather-card-forecast>`
         : ''}
         </div>
@@ -227,14 +249,17 @@ export class ClockWeatherCard extends LitElement {
     }
   }
 
-  private renderToday (): TemplateResult {
+  private renderToday (todayRightPad: number): TemplateResult {
     if (this.config.forecast_type === 'rain_daily') {
-      return this.renderTodayRain()
+      return this.renderTodayRain(todayRightPad)
     }
-    return this.renderTodayTemp()
+    if (this.config.forecast_type === 'uv_daily') {
+      return this.renderTodayUv(todayRightPad)
+    }
+    return this.renderTodayTemp(todayRightPad)
   }
 
-  private renderTodayTemp (): TemplateResult {
+  private renderTodayTemp (todayRightPad: number): TemplateResult {
     const weather = this.getWeather()
     const state = weather.state
     const temp = this.config.show_decimal ? this.getCurrentTemperature() : roundIfNotNull(this.getCurrentTemperature())
@@ -258,14 +283,14 @@ export class ClockWeatherCard extends LitElement {
         <img class="grow-img" src=${icon} />
       </clock-weather-card-today-left>
       <clock-weather-card-today-right>
-        <clock-weather-card-today-right-wrap>
+        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: ${todayRightPad}rem; box-sizing: border-box;">
           <clock-weather-card-today-right-wrap-top>
-            ${this.config.hide_clock ? weatherString : localizedTemp ? `${weatherString}, ${localizedTemp}` : weatherString}
+            ${this.getTodayDescription(this.config.hide_clock ? weatherString : localizedTemp ? `${weatherString}, ${localizedTemp}` : weatherString)}
             ${this.config.show_humidity && localizedHumidity ? html`<br>${localizedHumidity}` : ''}
             ${this.config.apparent_sensor && apparentTemp ? html`<br>${apparentString}: ${localizedApparent}` : ''}
             ${this.config.aqi_sensor && aqi !== null ? html`<br><aqi style="background-color: ${aqiBackgroundColor}; color: ${aqiTextColor};">${aqi} ${aqiString}</aqi>` : ''}
           </clock-weather-card-today-right-wrap-top>
-          <clock-weather-card-today-right-wrap-center>
+          <clock-weather-card-today-right-wrap-center style="justify-content: end;">
             ${this.config.hide_clock ? localizedTemp ?? 'n/a' : this.time()}
           </clock-weather-card-today-right-wrap-center>
           <clock-weather-card-today-right-wrap-bottom>
@@ -275,7 +300,7 @@ export class ClockWeatherCard extends LitElement {
       </clock-weather-card-today-right>`
   }
 
-  private renderTodayRain (): TemplateResult {
+  private renderTodayRain (todayRightPad: number): TemplateResult {
     const weather = this.getWeather()
     const state = weather.state
     const iconType = this.config.weather_icon_type
@@ -289,11 +314,11 @@ export class ClockWeatherCard extends LitElement {
         <img class="grow-img" src=${icon} />
       </clock-weather-card-today-left>
       <clock-weather-card-today-right>
-        <clock-weather-card-today-right-wrap>
+        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: ${todayRightPad}rem; box-sizing: border-box;">
           <clock-weather-card-today-right-wrap-top>
-            ${rainDescription}
+            ${this.getTodayDescription(rainDescription)}
           </clock-weather-card-today-right-wrap-top>
-          <clock-weather-card-today-right-wrap-center style="${currentRain === null || currentRain === 0 ? 'justify-content: end;' : ''}">
+          <clock-weather-card-today-right-wrap-center style="justify-content: end;">
             ${currentRain !== null && currentRain > 0
               ? html`${currentRain} <span class="rain-unit-large">mm</span>`
               : 'Nil'}
@@ -306,10 +331,10 @@ export class ClockWeatherCard extends LitElement {
   }
 
   private getRainDescription (chance: number): string {
-    if (chance === 0) return 'No chance of rain'
-    if (chance <= 30) return 'Low chance of rain'
-    if (chance <= 60) return 'Medium chance of rain'
-    return 'High chance of rain'
+    if (chance === 0) return 'No chance of rain,\ndon\'t worry about the brolly!'
+    if (chance <= 30) return 'Low chance of rain,\nmaybe pack that brolly!'
+    if (chance <= 60) return 'Medium chance of rain,\nmaybe pack that brolly!'
+    return 'High chance of rain,\nif you don\'t pack that brolly you will be sorry!'
   }
 
   private renderForecast (): TemplateResult[] {
@@ -321,20 +346,7 @@ export class ClockWeatherCard extends LitElement {
 
     const forecasts = this.mergeForecasts(maxRowsCount, hourly)
 
-    const sensorMin = this.getSensorTemp(this.config.temperature_sensor_min)
-    const sensorMax = this.getSensorTemp(this.config.temperature_sensor_max)
-
-    const allForecasts = this.isLegacyWeather() ? this.getWeather().attributes.forecast ?? [] : this.forecasts ?? []
-    const allMinTemps = allForecasts.map((f) => f.templow ?? f.temperature ?? 0)
-    const allMaxTemps = allForecasts.map((f) => f.temperature ?? 0)
-    if (currentTemp !== null) {
-      allMinTemps.push(currentTemp)
-      allMaxTemps.push(currentTemp)
-    }
-    const computedMin = Math.round(min(allMinTemps))
-    const computedMax = Math.round(max(allMaxTemps))
-    const minTemp = Math.min(sensorMin !== null ? Math.round(sensorMin) : computedMin, computedMin)
-    const maxTemp = Math.max(sensorMax !== null ? Math.round(sensorMax) : computedMax, computedMax)
+    const { minTemp, maxTemp } = this.getGlobalTempRange(currentTemp)
 
     const displayTexts = forecasts
       .map(f => f.datetime)
@@ -456,12 +468,8 @@ export class ClockWeatherCard extends LitElement {
       .map(f => f.datetime)
       .map(d => this.localize(`day.${d.weekday}`))
     const maxColOneChars = this.getMaxColOneChars()
-    const allForecasts = this.isLegacyWeather() ? this.getWeather().attributes.forecast ?? [] : this.forecasts ?? []
-    const allMinTemps = allForecasts.map((f) => f.templow ?? f.temperature ?? 0)
-    const allMaxTemps = allForecasts.map((f) => f.temperature ?? 0)
-    const tempMin = allMinTemps.length ? Math.round(Math.min(...allMinTemps)) : 0
-    const tempMax = allMaxTemps.length ? Math.round(Math.max(...allMaxTemps)) : 0
-    const maxValueChars = this.getMaxTempChars(tempMin, tempMax)
+    const { minTemp, maxTemp } = this.getGlobalTempRange()
+    const maxValueChars = this.getMaxTempChars(minTemp, maxTemp)
 
     return rainDays.map((day, i) => safeRender(() =>
       this.renderRainForecastItem(day, globalMax, forecasts[i], displayTexts[i] ?? '', maxColOneChars, maxValueChars, i === 0, currentRain)
@@ -542,6 +550,144 @@ export class ClockWeatherCard extends LitElement {
     const val = sensor?.state ? parseFloat(sensor.state) : undefined
     if (val !== undefined && !isNaN(val)) return val
     return null
+  }
+
+  private getTodayDescription (fallback: string): TemplateResult {
+    let text = fallback
+    if (this.config.today_description_sensor) {
+      text = this.getStringState(this.config.today_description_sensor) ?? fallback
+    }
+    text = text.trim().replace(/^\.+|\.+$/g, '').trim()
+    if (text.length > 50) {
+      text = text.split(',')[0].trim().replace(/^\.+|\.+$/g, '').trim()
+    }
+    if (text.length > 50) {
+      text = text.substring(0, 47).trim().replace(/^\.+|\.+$/g, '').trim() + ' ...'
+    }
+    const parts = text.split('\n')
+    if (parts.length > 1) {
+      return html`${parts[0]}<br>${parts.slice(1).join(' ')}`
+    }
+    return html`${text}`
+  }
+
+  private getStringState (entityId: string): string | null {
+    const sensor = this.hass.states[entityId]
+    if (sensor?.state && sensor.state !== 'unknown' && sensor.state !== 'unavailable') return sensor.state
+    return null
+  }
+
+  private renderTodayUv (todayRightPad: number): TemplateResult {
+    const weather = this.getWeather()
+    const state = weather.state
+    const iconType = this.config.weather_icon_type
+    const icon = this.toIcon(state, iconType, undefined, this.getIconAnimationKind())
+    const prefix = this.config.uv_sensor_prefix ?? ''
+    const category = this.getStringState(`${prefix}category_0`) ?? 'n/a'
+    const weatherString = this.localize(`weather.${state}`)
+
+    return html`
+      <clock-weather-card-today-left>
+        <img class="grow-img" src=${icon} />
+      </clock-weather-card-today-left>
+      <clock-weather-card-today-right>
+        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: ${todayRightPad}rem; box-sizing: border-box;">
+          <clock-weather-card-today-right-wrap-top>
+            ${this.getTodayDescription(weatherString)}
+          </clock-weather-card-today-right-wrap-top>
+          <clock-weather-card-today-right-wrap-center style="justify-content: end;">
+            ${category}
+          </clock-weather-card-today-right-wrap-center>
+          <clock-weather-card-today-right-wrap-bottom>
+            ${this.config.hide_date ? '' : this.date()}
+          </clock-weather-card-today-right-wrap-bottom>
+        </clock-weather-card-today-right-wrap>
+      </clock-weather-card-today-right>`
+  }
+
+  private renderUvForecast (): TemplateResult[] {
+    const prefix = this.config.uv_sensor_prefix
+    if (!prefix) return []
+
+    const maxRowsCount = this.config.forecast_rows
+
+    const uvDays: Array<{ maxIndex: number, startHour: number, endHour: number, category: string }> = []
+    for (let i = 0; i < maxRowsCount; i++) {
+      const maxIndex = this.getNumericState(`${prefix}max_index_${i}`) ?? 0
+      const startTimeStr = this.getStringState(`${prefix}start_time_${i}`)
+      const endTimeStr = this.getStringState(`${prefix}end_time_${i}`)
+      const category = this.getStringState(`${prefix}category_${i}`) ?? ''
+      const startHour = startTimeStr ? DateTime.fromISO(startTimeStr).toLocal().hour : 6
+      const endHour = endTimeStr ? Math.ceil(DateTime.fromISO(endTimeStr).toLocal().hour + DateTime.fromISO(endTimeStr).toLocal().minute / 60) : 18
+      uvDays.push({ maxIndex, startHour: Math.max(6, startHour), endHour: Math.min(18, endHour), category })
+    }
+
+    const forecasts = this.mergeForecasts(maxRowsCount, false)
+    const displayTexts = forecasts
+      .map(f => f.datetime)
+      .map(d => this.localize(`day.${d.weekday}`))
+    const maxColOneChars = this.getMaxColOneChars()
+    const { minTemp, maxTemp } = this.getGlobalTempRange()
+    const maxValueChars = this.getMaxTempChars(minTemp, maxTemp)
+
+    return uvDays.map((day, i) => safeRender(() =>
+      this.renderUvForecastItem(day, forecasts[i], displayTexts[i] ?? '', maxColOneChars, maxValueChars)
+    ))
+  }
+
+  private renderUvForecastItem (
+    day: { maxIndex: number, startHour: number, endHour: number, category: string },
+    forecast: MergedWeatherForecast | undefined,
+    displayText: string,
+    maxColOneChars: number,
+    maxValueChars: number
+  ): TemplateResult {
+    const weatherState = forecast ? (forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition) : 'sunny'
+    const weatherIcon = this.toIcon(weatherState, 'fill', 'day', 'static')
+    const timeRange = `${day.startHour}–${day.endHour}`
+
+    return html`
+      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size: ${(maxValueChars * 0.5)}rem;">
+        ${this.renderText(displayText)}
+        ${this.renderIcon(weatherIcon)}
+        ${this.renderText(timeRange, 'right')}
+        ${this.renderUvBar(day.startHour, day.endHour, day.maxIndex)}
+        <forecast-text>${day.maxIndex}</forecast-text>
+      </clock-weather-card-forecast-row>
+    `
+  }
+
+  private renderUvBar (startHour: number, endHour: number, maxIndex: number): TemplateResult {
+    const showBar = maxIndex > 0 && endHour > startHour
+    const startPercent = ((startHour - 6) / 12) * 100
+    const endPercent = ((endHour - 6) / 12) * 100
+    const moveRight = (startHour - 6) / 12
+    const gradient = this.createUvGradientString(maxIndex)
+
+    return html`
+      <forecast-temperature-bar>
+        <forecast-temperature-bar-background> </forecast-temperature-bar-background>
+        ${showBar
+          ? html`<forecast-temperature-bar-range
+              style="--move-right: ${moveRight.toFixed(2)}; --start-percent: ${startPercent.toFixed(2)}%; --end-percent: ${endPercent.toFixed(2)}%; --gradient: ${gradient};"
+            >
+            </forecast-temperature-bar-range>`
+          : ''}
+      </forecast-temperature-bar>
+    `
+  }
+
+  private createUvGradientString (maxIndex: number): string {
+    const color = this.getUvColor(maxIndex)
+    return `${color.toRgbString()} 0%, ${color.toRgbString()} 100%`
+  }
+
+  private getUvColor (index: number): Rgb {
+    if (index <= 2) return new Rgb(78, 166, 56)
+    if (index <= 5) return new Rgb(247, 186, 31)
+    if (index <= 7) return new Rgb(232, 110, 28)
+    if (index <= 10) return new Rgb(209, 47, 41)
+    return new Rgb(134, 48, 147)
   }
 
   // https://lit.dev/docs/components/styles/
@@ -673,7 +819,8 @@ export class ClockWeatherCard extends LitElement {
       temperature_sensor_min: config.temperature_sensor_min ?? undefined,
       temperature_sensor_max: config.temperature_sensor_max ?? undefined,
       rain_sensor: config.rain_sensor ?? undefined,
-      rain_sensor_prefix: config.rain_sensor_prefix ? (config.rain_sensor_prefix.endsWith('_') ? config.rain_sensor_prefix : `${config.rain_sensor_prefix}_`) : undefined
+      rain_sensor_prefix: config.rain_sensor_prefix ? (config.rain_sensor_prefix.endsWith('_') ? config.rain_sensor_prefix : `${config.rain_sensor_prefix}_`) : undefined,
+      uv_sensor_prefix: config.uv_sensor_prefix ? (config.uv_sensor_prefix.endsWith('_') ? config.uv_sensor_prefix : `${config.uv_sensor_prefix}_`) : undefined
     }
   }
 
@@ -833,6 +980,24 @@ export class ClockWeatherCard extends LitElement {
     return this.toZonedDate(date).toFormat('t')
   }
 
+  private getGlobalTempRange (currentTemp: number | null = null): { minTemp: number, maxTemp: number } {
+    const sensorMin = this.getSensorTemp(this.config.temperature_sensor_min)
+    const sensorMax = this.getSensorTemp(this.config.temperature_sensor_max)
+
+    const allForecasts = this.isLegacyWeather() ? this.getWeather().attributes.forecast ?? [] : this.forecasts ?? []
+    const allMinTemps = allForecasts.map((f) => f.templow ?? f.temperature ?? 0)
+    const allMaxTemps = allForecasts.map((f) => f.temperature ?? 0)
+    if (currentTemp !== null) {
+      allMinTemps.push(currentTemp)
+      allMaxTemps.push(currentTemp)
+    }
+    const computedMin = Math.round(min(allMinTemps))
+    const computedMax = Math.round(max(allMaxTemps))
+    const minTemp = Math.min(sensorMin !== null ? Math.round(sensorMin) : computedMin, computedMin)
+    const maxTemp = Math.max(sensorMax !== null ? Math.round(sensorMax) : computedMax, computedMax)
+    return { minTemp, maxTemp }
+  }
+
   private getMaxColOneChars (): number {
     const dayLengths = [1, 2, 3, 4, 5, 6, 7].map(d => this.localize(`day.${d}`).length)
     const sampleTime = this.time(DateTime.now())
@@ -850,7 +1015,19 @@ export class ClockWeatherCard extends LitElement {
         rainSamples.push(`${maxVal} mm`.length, `${Math.round(chanceVal)}%`.length)
       }
     }
-    return Math.max(...tempSamples, ...rainSamples)
+    const uvSamples: number[] = []
+    if (this.config.uv_sensor_prefix) {
+      for (let i = 0; i < this.config.forecast_rows; i++) {
+        const maxIndex = this.getNumericState(`${this.config.uv_sensor_prefix}max_index_${i}`) ?? 0
+        const startTimeStr = this.getStringState(`${this.config.uv_sensor_prefix}start_time_${i}`)
+        const endTimeStr = this.getStringState(`${this.config.uv_sensor_prefix}end_time_${i}`)
+        const startHour = startTimeStr ? DateTime.fromISO(startTimeStr).toLocal().hour : 6
+        const endHour = endTimeStr ? Math.ceil(DateTime.fromISO(endTimeStr).toLocal().hour + DateTime.fromISO(endTimeStr).toLocal().minute / 60) : 18
+        const timeRange = `${Math.max(6, startHour)}–${Math.min(18, endHour)}`
+        uvSamples.push(`${maxIndex}`.length, timeRange.length)
+      }
+    }
+    return Math.max(...tempSamples, ...rainSamples, ...uvSamples)
   }
 
   private getIconAnimationKind (): 'static' | 'animated' {

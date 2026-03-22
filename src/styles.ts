@@ -39,12 +39,13 @@ export default css`
     width: 100%;
     text-align: end;
     display: block;
+    min-height: 2.4em;
   }
 
   clock-weather-card-today-right-wrap-center {
     display: flex;
-    height: 4rem;
-    font-size: 3.5rem;
+    height: 3rem;
+    font-size: 2.5rem;
     white-space: nowrap;
     align-items: center;
     justify-content: center;
