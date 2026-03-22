@@ -673,7 +673,7 @@ export class ClockWeatherCard extends LitElement {
       temperature_sensor_min: config.temperature_sensor_min ?? undefined,
       temperature_sensor_max: config.temperature_sensor_max ?? undefined,
       rain_sensor: config.rain_sensor ?? undefined,
-      rain_sensor_prefix: config.rain_sensor_prefix ?? undefined
+      rain_sensor_prefix: config.rain_sensor_prefix ? (config.rain_sensor_prefix.endsWith('_') ? config.rain_sensor_prefix : `${config.rain_sensor_prefix}_`) : undefined
     }
   }
 
