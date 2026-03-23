@@ -192,9 +192,6 @@ export class ClockWeatherCard extends LitElement {
 
     const showToday = !this.config.hide_today_section
     const showForecast = !this.config.hide_forecast_section
-    const { minTemp, maxTemp } = this.getGlobalTempRange()
-    const tempColSize = this.getMaxTempChars(minTemp, maxTemp) * 0.5
-    const todayRightPad = tempColSize + 1
     return html`
       <ha-card
         @action=${(e: ActionHandlerEvent) => { this.handleAction(e) }}
@@ -215,7 +212,7 @@ export class ClockWeatherCard extends LitElement {
           ${showToday
         ? html`
             <clock-weather-card-today>
-              ${safeRender(() => this.renderToday(todayRightPad))}
+              ${safeRender(() => this.renderToday())}
             </clock-weather-card-today>`
         : ''}
           ${showForecast && this.config.forecast_type !== 'rain_daily' && this.config.forecast_type !== 'uv_daily' && this.config.forecast_type !== 'bushfire_daily'
@@ -243,7 +240,7 @@ export class ClockWeatherCard extends LitElement {
             </clock-weather-card-forecast>`
         : ''}
           ${this.config.forecast_type === 'bushfire_daily' && this.config.bushfire_alerts_sensor
-        ? safeRender(() => this.renderBushfireAlerts(todayRightPad))
+        ? safeRender(() => this.renderBushfireAlerts())
         : ''}
         </div>
       </ha-card>
@@ -269,20 +266,20 @@ export class ClockWeatherCard extends LitElement {
     }
   }
 
-  private renderToday (todayRightPad: number): TemplateResult {
+  private renderToday (): TemplateResult {
     if (this.config.forecast_type === 'rain_daily') {
-      return this.renderTodayRain(todayRightPad)
+      return this.renderTodayRain()
     }
     if (this.config.forecast_type === 'uv_daily') {
-      return this.renderTodayUv(todayRightPad)
+      return this.renderTodayUv()
     }
     if (this.config.forecast_type === 'bushfire_daily') {
-      return this.renderTodayBushfire(todayRightPad)
+      return this.renderTodayBushfire()
     }
-    return this.renderTodayTemp(todayRightPad)
+    return this.renderTodayTemp()
   }
 
-  private renderTodayTemp (todayRightPad: number): TemplateResult {
+  private renderTodayTemp (): TemplateResult {
     const weather = this.getWeather()
     const state = weather.state
     const temp = this.config.show_decimal ? this.getCurrentTemperature() : roundIfNotNull(this.getCurrentTemperature())
@@ -306,7 +303,7 @@ export class ClockWeatherCard extends LitElement {
         <img class="grow-img" src=${icon} />
       </clock-weather-card-today-left>
       <clock-weather-card-today-right>
-        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: ${todayRightPad}rem; box-sizing: border-box;">
+        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: 0.5rem; box-sizing: border-box;">
           <clock-weather-card-today-right-wrap-top>
             ${this.getTodayDescription(this.config.hide_clock ? weatherString : localizedTemp ? `${weatherString}, ${localizedTemp}` : weatherString)}
             ${this.config.show_humidity && localizedHumidity ? html`<br>${localizedHumidity}` : ''}
@@ -323,7 +320,7 @@ export class ClockWeatherCard extends LitElement {
       </clock-weather-card-today-right>`
   }
 
-  private renderTodayRain (todayRightPad: number): TemplateResult {
+  private renderTodayRain (): TemplateResult {
     const weather = this.getWeather()
     const state = weather.state
     const iconType = this.config.weather_icon_type
@@ -337,7 +334,7 @@ export class ClockWeatherCard extends LitElement {
         <img class="grow-img" src=${icon} />
       </clock-weather-card-today-left>
       <clock-weather-card-today-right>
-        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: ${todayRightPad}rem; box-sizing: border-box;">
+        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: 0.5rem; box-sizing: border-box;">
           <clock-weather-card-today-right-wrap-top>
             ${this.getTodayDescription(rainDescription)}
           </clock-weather-card-today-right-wrap-top>
@@ -581,11 +578,11 @@ export class ClockWeatherCard extends LitElement {
       text = this.getStringState(this.config.today_description_sensor) ?? fallback
     }
     text = text.trim().replace(/^\.+|\.+$/g, '').trim()
-    if (text.length > 50) {
+    if (text.length > 75) {
       text = text.split(',')[0].trim().replace(/^\.+|\.+$/g, '').trim()
     }
-    if (text.length > 50) {
-      text = text.substring(0, 47).trim().replace(/^\.+|\.+$/g, '').trim().replace(/[^a-zA-Z0-9]+$/, '') + ' ...'
+    if (text.length > 75) {
+      text = text.substring(0, 72).trim().replace(/^\.+|\.+$/g, '').trim().replace(/[^a-zA-Z0-9]+$/, '') + ' ...'
     }
     const parts = text.split('\n')
     if (parts.length > 1) {
@@ -600,7 +597,7 @@ export class ClockWeatherCard extends LitElement {
     return null
   }
 
-  private renderTodayUv (todayRightPad: number): TemplateResult {
+  private renderTodayUv (): TemplateResult {
     const weather = this.getWeather()
     const state = weather.state
     const iconType = this.config.weather_icon_type
@@ -614,7 +611,7 @@ export class ClockWeatherCard extends LitElement {
         <img class="grow-img" src=${icon} />
       </clock-weather-card-today-left>
       <clock-weather-card-today-right>
-        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: ${todayRightPad}rem; box-sizing: border-box;">
+        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: 0.5rem; box-sizing: border-box;">
           <clock-weather-card-today-right-wrap-top>
             ${this.getTodayDescription(weatherString)}
           </clock-weather-card-today-right-wrap-top>
@@ -713,7 +710,7 @@ export class ClockWeatherCard extends LitElement {
     return new Rgb(209, 47, 41)
   }
 
-  private renderTodayBushfire (todayRightPad: number): TemplateResult {
+  private renderTodayBushfire (): TemplateResult {
     const weather = this.getWeather()
     const state = weather.state
     const iconType = this.config.weather_icon_type
@@ -727,7 +724,7 @@ export class ClockWeatherCard extends LitElement {
         <img class="grow-img" src=${icon} />
       </clock-weather-card-today-left>
       <clock-weather-card-today-right>
-        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: ${todayRightPad}rem; box-sizing: border-box;">
+        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: 0.5rem; box-sizing: border-box;">
           <clock-weather-card-today-right-wrap-top>
             Bush fire risk is ${rating} today,<br>${description}
           </clock-weather-card-today-right-wrap-top>
@@ -835,7 +832,7 @@ export class ClockWeatherCard extends LitElement {
     return ''
   }
 
-  private renderBushfireAlerts (todayRightPad: number): TemplateResult {
+  private renderBushfireAlerts (): TemplateResult {
     const entityId = this.config.bushfire_alerts_sensor
     if (!entityId) return html``
     const sensor = this.hass.states[entityId]
@@ -861,7 +858,7 @@ export class ClockWeatherCard extends LitElement {
           <ha-icon icon="mdi:alert" style="--mdc-icon-size: 100%; width: 100%; height: 100%; color: red;"></ha-icon>
         </clock-weather-card-today-left>
         <clock-weather-card-today-right>
-          <clock-weather-card-today-right-wrap style="width: 100%; padding-right: ${todayRightPad}rem; box-sizing: border-box;">
+          <clock-weather-card-today-right-wrap style="width: 100%; padding-right: 0.5rem; box-sizing: border-box;">
             <clock-weather-card-today-right-wrap-top>
               <a href="https://www.emergency.wa.gov.au/?view=both" style="color: var(--primary-text-color);" @click=${(e: Event) => { e.preventDefault(); e.stopPropagation(); window.open('https://www.emergency.wa.gov.au/?view=both', '_blank') }}>DFES Emergency Warnings</a><br>Bushfire within 30km of home
             </clock-weather-card-today-right-wrap-top>
