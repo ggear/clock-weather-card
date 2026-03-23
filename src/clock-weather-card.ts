@@ -144,6 +144,17 @@ export class ClockWeatherCard extends LitElement {
         }
       }
 
+      if (this.config.forecast_type === 'bushfire_daily' && this.config.bushfire_sensor_prefix) {
+        for (let i = 0; i < this.config.forecast_rows; i++) {
+          const id = `${this.config.bushfire_sensor_prefix}${i}`
+          if (oldHass.states[id] !== this.hass.states[id]) return true
+        }
+      }
+
+      if (this.config.bushfire_alerts_sensor && oldHass.states[this.config.bushfire_alerts_sensor] !== this.hass.states[this.config.bushfire_alerts_sensor]) {
+        return true
+      }
+
       if (this.config.forecast_type === 'rain_daily') {
         if (this.config.rain_sensor && oldHass.states[this.config.rain_sensor] !== this.hass.states[this.config.rain_sensor]) {
           return true
@@ -207,7 +218,7 @@ export class ClockWeatherCard extends LitElement {
               ${safeRender(() => this.renderToday(todayRightPad))}
             </clock-weather-card-today>`
         : ''}
-          ${showForecast && this.config.forecast_type !== 'rain_daily' && this.config.forecast_type !== 'uv_daily'
+          ${showForecast && this.config.forecast_type !== 'rain_daily' && this.config.forecast_type !== 'uv_daily' && this.config.forecast_type !== 'bushfire_daily'
         ? html`
             <clock-weather-card-forecast>
               ${safeRender(() => this.renderForecast())}
@@ -224,6 +235,15 @@ export class ClockWeatherCard extends LitElement {
             <clock-weather-card-forecast>
               ${safeRender(() => this.renderUvForecast())}
             </clock-weather-card-forecast>`
+        : ''}
+          ${this.config.forecast_type === 'bushfire_daily' && this.config.bushfire_sensor_prefix
+        ? html`
+            <clock-weather-card-forecast>
+              ${safeRender(() => this.renderBushfireForecast())}
+            </clock-weather-card-forecast>`
+        : ''}
+          ${this.config.forecast_type === 'bushfire_daily' && this.config.bushfire_alerts_sensor
+        ? safeRender(() => this.renderBushfireAlerts(todayRightPad))
         : ''}
         </div>
       </ha-card>
@@ -255,6 +275,9 @@ export class ClockWeatherCard extends LitElement {
     }
     if (this.config.forecast_type === 'uv_daily') {
       return this.renderTodayUv(todayRightPad)
+    }
+    if (this.config.forecast_type === 'bushfire_daily') {
+      return this.renderTodayBushfire(todayRightPad)
     }
     return this.renderTodayTemp(todayRightPad)
   }
@@ -562,7 +585,7 @@ export class ClockWeatherCard extends LitElement {
       text = text.split(',')[0].trim().replace(/^\.+|\.+$/g, '').trim()
     }
     if (text.length > 50) {
-      text = text.substring(0, 47).trim().replace(/^\.+|\.+$/g, '').trim() + ' ...'
+      text = text.substring(0, 47).trim().replace(/^\.+|\.+$/g, '').trim().replace(/[^a-zA-Z0-9]+$/, '') + ' ...'
     }
     const parts = text.split('\n')
     if (parts.length > 1) {
@@ -596,7 +619,7 @@ export class ClockWeatherCard extends LitElement {
             ${this.getTodayDescription(weatherString)}
           </clock-weather-card-today-right-wrap-top>
           <clock-weather-card-today-right-wrap-center style="justify-content: end;">
-            ${category} UV
+            ${category}
           </clock-weather-card-today-right-wrap-center>
           <clock-weather-card-today-right-wrap-bottom>
             ${this.config.hide_date ? '' : this.date()}
@@ -683,11 +706,188 @@ export class ClockWeatherCard extends LitElement {
   }
 
   private getUvColor (index: number): Rgb {
-    if (index <= 2) return new Rgb(78, 166, 56)
-    if (index <= 5) return new Rgb(247, 186, 31)
-    if (index <= 7) return new Rgb(232, 110, 28)
-    if (index <= 10) return new Rgb(209, 47, 41)
-    return new Rgb(134, 48, 147)
+    if (index <= 2) return new Rgb(255, 255, 255)
+    if (index <= 5) return new Rgb(78, 166, 56)
+    if (index <= 7) return new Rgb(247, 186, 31)
+    if (index <= 10) return new Rgb(232, 110, 28)
+    return new Rgb(209, 47, 41)
+  }
+
+  private renderTodayBushfire (todayRightPad: number): TemplateResult {
+    const weather = this.getWeather()
+    const state = weather.state
+    const iconType = this.config.weather_icon_type
+    const icon = this.toIcon(state, iconType, undefined, this.getIconAnimationKind())
+    const prefix = this.config.bushfire_sensor_prefix ?? ''
+    const rating = this.getStringState(`${prefix}0`) ?? 'n/a'
+    const description = this.getBushfireDescription(rating)
+
+    return html`
+      <clock-weather-card-today-left>
+        <img class="grow-img" src=${icon} />
+      </clock-weather-card-today-left>
+      <clock-weather-card-today-right>
+        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: ${todayRightPad}rem; box-sizing: border-box;">
+          <clock-weather-card-today-right-wrap-top>
+            Bush fire risk is ${rating} today,<br>${description}
+          </clock-weather-card-today-right-wrap-top>
+          <clock-weather-card-today-right-wrap-center style="justify-content: end;">
+            ${rating}
+          </clock-weather-card-today-right-wrap-center>
+          <clock-weather-card-today-right-wrap-bottom>
+            ${this.config.hide_date ? '' : this.date()}
+          </clock-weather-card-today-right-wrap-bottom>
+        </clock-weather-card-today-right-wrap>
+      </clock-weather-card-today-right>`
+  }
+
+  private getBushfireDescription (rating: string): string {
+    const r = rating.toLowerCase()
+    if (r === 'no rating') return 'nothing to worry about!'
+    if (r === 'moderate') return 'plan and prepare'
+    if (r === 'high') return 'be ready to act'
+    if (r === 'extreme') return 'high vigilance, be ready to act'
+    if (r === 'catastrophic') return 'high vigilance, consider leaving home'
+    return ''
+  }
+
+  private renderBushfireForecast (): TemplateResult[] {
+    const prefix = this.config.bushfire_sensor_prefix
+    if (!prefix) return []
+
+    const maxRowsCount = this.config.forecast_rows
+
+    const bushfireDays: Array<{ rating: string }> = []
+    for (let i = 0; i < maxRowsCount; i++) {
+      const rating = this.getStringState(`${prefix}${i}`) ?? ''
+      bushfireDays.push({ rating })
+    }
+
+    const forecasts = this.mergeForecasts(maxRowsCount, false)
+    const displayTexts = forecasts
+      .map(f => f.datetime)
+      .map(d => this.localize(`day.${d.weekday}`))
+    const maxColOneChars = this.getMaxColOneChars()
+    const { minTemp, maxTemp } = this.getGlobalTempRange()
+    const maxValueChars = this.getMaxTempChars(minTemp, maxTemp)
+
+    return bushfireDays.map((day, i) => safeRender(() =>
+      this.renderBushfireForecastItem(day, forecasts[i], displayTexts[i] ?? '', maxColOneChars, maxValueChars)
+    ))
+  }
+
+  private renderBushfireForecastItem (
+    day: { rating: string },
+    forecast: MergedWeatherForecast | undefined,
+    displayText: string,
+    maxColOneChars: number,
+    maxValueChars: number
+  ): TemplateResult {
+    const weatherState = forecast ? (forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition) : 'sunny'
+    const weatherIcon = this.toIcon(weatherState, 'fill', 'day', 'static')
+
+    return html`
+      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size: ${(maxValueChars * 0.5)}rem;">
+        ${this.renderText(displayText)}
+        ${this.renderIcon(weatherIcon)}
+        ${this.renderText('0–24', 'right')}
+        ${this.renderBushfireBar(day.rating)}
+        <forecast-text>${this.getBushfireAbbreviation(day.rating)}</forecast-text>
+      </clock-weather-card-forecast-row>
+    `
+  }
+
+  private renderBushfireBar (rating: string): TemplateResult {
+    const color = this.getBushfireColor(rating)
+    const showBar = rating.toLowerCase() !== 'no rating' && rating !== ''
+    const gradient = `${color.toRgbString()} 0%, ${color.toRgbString()} 100%`
+
+    return html`
+      <forecast-temperature-bar>
+        <forecast-temperature-bar-background> </forecast-temperature-bar-background>
+        ${showBar
+          ? html`<forecast-temperature-bar-range
+              style="--move-right: 0.00; --start-percent: 0.00%; --end-percent: 100.00%; --gradient: ${gradient};"
+            >
+            </forecast-temperature-bar-range>`
+          : ''}
+      </forecast-temperature-bar>
+    `
+  }
+
+  private getBushfireColor (rating: string): Rgb {
+    const r = rating.toLowerCase()
+    if (r === 'no rating') return new Rgb(255, 255, 255)
+    if (r === 'moderate') return new Rgb(78, 166, 56)
+    if (r === 'high') return new Rgb(247, 186, 31)
+    if (r === 'extreme') return new Rgb(232, 110, 28)
+    if (r === 'catastrophic') return new Rgb(209, 47, 41)
+    return new Rgb(255, 255, 255)
+  }
+
+  private getBushfireAbbreviation (rating: string): string {
+    const r = rating.toLowerCase()
+    if (r === 'no rating') return 'NONE'
+    if (r === 'moderate') return 'MOD'
+    if (r === 'high') return 'HIGH'
+    if (r === 'extreme') return 'EXT'
+    if (r === 'catastrophic') return 'CAT'
+    return ''
+  }
+
+  private renderBushfireAlerts (todayRightPad: number): TemplateResult {
+    const entityId = this.config.bushfire_alerts_sensor
+    if (!entityId) return html``
+    const sensor = this.hass.states[entityId]
+    if (!sensor) return html``
+    const attrs = sensor.attributes
+    const alertEntries: Array<{ incident: string, detailLines: string[], distance: string }> = []
+    for (const [key, value] of Object.entries(attrs)) {
+      if (['friendly_name', 'icon', 'unit_of_measurement'].includes(key)) continue
+      const parts = key.split('(')
+      const incident = parts[0].trim()
+      if (incident.toLowerCase() !== 'bushfire') continue
+      const rawDetails = parts.length > 1 ? parts[1].replace(/\)$/, '').trim() : ''
+      const commaSegments = rawDetails.split(',')
+      const detailLines = commaSegments.length > 2
+        ? [commaSegments.slice(0, 2).join(',').trim(), commaSegments.slice(2).join(',').trim()]
+        : [rawDetails]
+      alertEntries.push({ incident, detailLines, distance: String(value) })
+    }
+    if (alertEntries.length === 0) return html``
+    return html`
+      <clock-weather-card-today style="margin-top: 0.5rem;">
+        <clock-weather-card-today-left>
+          <ha-icon icon="mdi:alert" style="--mdc-icon-size: 100%; width: 100%; height: 100%; color: red;"></ha-icon>
+        </clock-weather-card-today-left>
+        <clock-weather-card-today-right>
+          <clock-weather-card-today-right-wrap style="width: 100%; padding-right: ${todayRightPad}rem; box-sizing: border-box;">
+            <clock-weather-card-today-right-wrap-top>
+              <a href="https://www.emergency.wa.gov.au/?view=both" style="color: var(--primary-text-color);" @click=${(e: Event) => { e.preventDefault(); e.stopPropagation(); window.open('https://www.emergency.wa.gov.au/?view=both', '_blank') }}>DFES Emergency Warnings</a><br>Bushfire within 30km of home
+            </clock-weather-card-today-right-wrap-top>
+            <clock-weather-card-today-right-wrap-center style="justify-content: end;">
+              Bushfire Alert
+            </clock-weather-card-today-right-wrap-center>
+          </clock-weather-card-today-right-wrap>
+        </clock-weather-card-today-right>
+      </clock-weather-card-today>
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; padding: 0 1rem;">
+        <thead>
+          <tr>
+            <th style="text-align: left; padding: 0.25rem 0.5rem;">Bushfire</th>
+            <th style="text-align: right; padding: 0.25rem 0.5rem;">Distance</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${alertEntries.map(e => html`
+            <tr>
+              <td style="padding: 0.25rem 0.5rem;">${e.detailLines.map((line, i) => i > 0 ? html`<br>${line}` : html`${line}`)}</td>
+              <td style="text-align: right; padding: 0.25rem 0.5rem;">${e.distance}</td>
+            </tr>
+          `)}
+        </tbody>
+      </table>
+    `
   }
 
   // https://lit.dev/docs/components/styles/
@@ -820,7 +1020,9 @@ export class ClockWeatherCard extends LitElement {
       temperature_sensor_max: config.temperature_sensor_max ?? undefined,
       rain_sensor: config.rain_sensor ?? undefined,
       rain_sensor_prefix: config.rain_sensor_prefix ? (config.rain_sensor_prefix.endsWith('_') ? config.rain_sensor_prefix : `${config.rain_sensor_prefix}_`) : undefined,
-      uv_sensor_prefix: config.uv_sensor_prefix ? (config.uv_sensor_prefix.endsWith('_') ? config.uv_sensor_prefix : `${config.uv_sensor_prefix}_`) : undefined
+      uv_sensor_prefix: config.uv_sensor_prefix ? (config.uv_sensor_prefix.endsWith('_') ? config.uv_sensor_prefix : `${config.uv_sensor_prefix}_`) : undefined,
+      bushfire_sensor_prefix: config.bushfire_sensor_prefix ? (config.bushfire_sensor_prefix.endsWith('_') ? config.bushfire_sensor_prefix : `${config.bushfire_sensor_prefix}_`) : undefined,
+      bushfire_alerts_sensor: config.bushfire_alerts_sensor ?? undefined
     }
   }
 
@@ -1005,18 +1207,20 @@ export class ClockWeatherCard extends LitElement {
   }
 
   private getMaxTempChars (minTemp: number, maxTemp: number): number {
-    const unit = this.getConfiguredTemperatureUnit()
-    const tempSamples = [minTemp, maxTemp, -minTemp, -maxTemp].map(t => `${t}${unit}`.length)
-    const rainSamples: number[] = []
-    if (this.config.rain_sensor_prefix) {
+    const forecastType = this.config.forecast_type
+
+    if (forecastType === 'rain_daily' && this.config.rain_sensor_prefix) {
+      const rainSamples: number[] = []
       for (let i = 0; i < this.config.forecast_rows; i++) {
         const maxVal = this.getNumericState(`${this.config.rain_sensor_prefix}amount_max_${i}`) ?? 0
         const chanceVal = this.getNumericState(`${this.config.rain_sensor_prefix}chance_${i}`) ?? 0
         rainSamples.push(`${maxVal} mm`.length, `${Math.round(chanceVal)}%`.length)
       }
+      return Math.max(...rainSamples)
     }
-    const uvSamples: number[] = []
-    if (this.config.uv_sensor_prefix) {
+
+    if (forecastType === 'uv_daily' && this.config.uv_sensor_prefix) {
+      const uvSamples: number[] = []
       for (let i = 0; i < this.config.forecast_rows; i++) {
         const maxIndex = this.getNumericState(`${this.config.uv_sensor_prefix}max_index_${i}`) ?? 0
         const startTimeStr = this.getStringState(`${this.config.uv_sensor_prefix}start_time_${i}`)
@@ -1024,10 +1228,20 @@ export class ClockWeatherCard extends LitElement {
         const startHour = startTimeStr ? DateTime.fromISO(startTimeStr).toLocal().hour : 6
         const endHour = endTimeStr ? Math.ceil(DateTime.fromISO(endTimeStr).toLocal().hour + DateTime.fromISO(endTimeStr).toLocal().minute / 60) : 18
         const timeRange = `${Math.max(6, startHour)}–${Math.min(18, endHour)}`
-        uvSamples.push(`${maxIndex}`.length, timeRange.length)
+        uvSamples.push(`${maxIndex} UV`.length, timeRange.length)
       }
+      return Math.max(...uvSamples)
     }
-    return Math.max(...tempSamples, ...rainSamples, ...uvSamples)
+
+    if (forecastType === 'bushfire_daily' && this.config.bushfire_sensor_prefix) {
+      const bushfireSamples: number[] = ['NONE', 'MOD', 'HIGH', 'EXT', 'CAT'].map(s => s.length)
+      bushfireSamples.push('0–24'.length)
+      return Math.max(...bushfireSamples)
+    }
+
+    const unit = this.getConfiguredTemperatureUnit()
+    const tempSamples = [minTemp, maxTemp, -minTemp, -maxTemp].map(t => `${t}${unit}`.length)
+    return Math.max(...tempSamples)
   }
 
   private getIconAnimationKind (): 'static' | 'animated' {
