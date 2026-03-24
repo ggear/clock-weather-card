@@ -170,8 +170,11 @@ export class ClockWeatherCard extends LitElement {
       }
     }
 
-    if (this.config.today_description_sensor && oldHass) {
-      if (oldHass.states[this.config.today_description_sensor] !== this.hass.states[this.config.today_description_sensor]) return true
+    const descriptionSensor = this.config.today_description_sensor ?? (this.config.forecast_type === 'uv_daily' && this.config.uv_sensor_prefix ? `${this.config.uv_sensor_prefix}forecast_0` : undefined)
+    if (descriptionSensor && oldHass) {
+      if (oldHass.states[descriptionSensor] !== this.hass.states[descriptionSensor]) return true
+      const fallbackSensor = descriptionSensor.endsWith('_0') ? descriptionSensor.replace(/_0$/, '_1') : undefined
+      if (fallbackSensor && oldHass.states[fallbackSensor] !== this.hass.states[fallbackSensor]) return true
     }
 
     return hasConfigOrEntityChanged(this, changedProps, false)
@@ -576,8 +579,9 @@ export class ClockWeatherCard extends LitElement {
 
   private getTodayDescription (fallback: string): TemplateResult {
     let text = fallback
-    if (this.config.today_description_sensor) {
-      text = this.getStringState(this.config.today_description_sensor) ?? fallback
+    const descriptionSensor = this.config.today_description_sensor ?? (this.config.forecast_type === 'uv_daily' && this.config.uv_sensor_prefix ? `${this.config.uv_sensor_prefix}forecast_0` : undefined)
+    if (descriptionSensor) {
+      text = this.getStringState(descriptionSensor) ?? (descriptionSensor.endsWith('_0') ? this.getStringState(descriptionSensor.replace(/_0$/, '_1')) : null) ?? fallback
     }
     text = text.trim().replace(/^\.+|\.+$/g, '').trim()
     if (text.length > 75) {
@@ -606,7 +610,7 @@ export class ClockWeatherCard extends LitElement {
     const iconState = this.getWeatherStateWithRainOverride(state)
     const icon = this.toIcon(iconState, iconType, undefined, this.getIconAnimationKind())
     const prefix = this.config.uv_sensor_prefix ?? ''
-    const category = this.getStringState(`${prefix}category_0`) ?? 'n/a'
+    const category = this.getStringState(`${prefix}category_0`) ?? this.getStringState(`${prefix}category_1`) ?? 'n/a'
     const weatherString = this.localize(`weather.${state}`)
 
     return html`
@@ -636,10 +640,11 @@ export class ClockWeatherCard extends LitElement {
 
     const uvDays: Array<{ maxIndex: number, startHour: number, endHour: number, category: string }> = []
     for (let i = 0; i < maxRowsCount; i++) {
-      const maxIndex = this.getNumericState(`${prefix}max_index_${i}`) ?? 0
-      const startTimeStr = this.getStringState(`${prefix}start_time_${i}`)
-      const endTimeStr = this.getStringState(`${prefix}end_time_${i}`)
-      const category = this.getStringState(`${prefix}category_${i}`) ?? ''
+      const fallback = i === 0 ? 1 : i
+      const maxIndex = this.getNumericState(`${prefix}max_index_${i}`) ?? (i === 0 ? this.getNumericState(`${prefix}max_index_${fallback}`) ?? 0 : 0)
+      const startTimeStr = this.getStringState(`${prefix}start_time_${i}`) ?? (i === 0 ? this.getStringState(`${prefix}start_time_${fallback}`) : null)
+      const endTimeStr = this.getStringState(`${prefix}end_time_${i}`) ?? (i === 0 ? this.getStringState(`${prefix}end_time_${fallback}`) : null)
+      const category = this.getStringState(`${prefix}category_${i}`) ?? (i === 0 ? this.getStringState(`${prefix}category_${fallback}`) ?? '' : '')
       const startHour = startTimeStr ? DateTime.fromISO(startTimeStr).toLocal().hour : 6
       const endHour = endTimeStr ? Math.ceil(DateTime.fromISO(endTimeStr).toLocal().hour + DateTime.fromISO(endTimeStr).toLocal().minute / 60) : 18
       uvDays.push({ maxIndex, startHour: Math.max(6, startHour), endHour: Math.min(18, endHour), category })
