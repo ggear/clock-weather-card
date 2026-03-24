@@ -290,7 +290,8 @@ export class ClockWeatherCard extends LitElement {
     const aqiTextColor = this.getAqiTextColor(aqi)
     const humidity = roundIfNotNull(this.getCurrentHumidity())
     const iconType = this.config.weather_icon_type
-    const icon = this.toIcon(state, iconType, undefined, this.getIconAnimationKind())
+    const iconState = this.getWeatherStateWithRainOverride(state)
+    const icon = this.toIcon(iconState, iconType, undefined, this.getIconAnimationKind())
     const weatherString = this.localize(`weather.${state}`)
     const localizedTemp = temp !== null ? this.toConfiguredTempWithUnit(tempUnit, temp) : null
     const localizedHumidity = humidity !== null ? `${humidity}% ${this.localize('misc.humidity')}` : null
@@ -324,7 +325,8 @@ export class ClockWeatherCard extends LitElement {
     const weather = this.getWeather()
     const state = weather.state
     const iconType = this.config.weather_icon_type
-    const icon = this.toIcon(state, iconType, undefined, this.getIconAnimationKind())
+    const iconState = this.getWeatherStateWithRainOverride(state)
+    const icon = this.toIcon(iconState, iconType, undefined, this.getIconAnimationKind())
     const chance = this.config.rain_sensor_prefix ? this.getNumericState(`${this.config.rain_sensor_prefix}chance_0`) ?? 0 : 0
     const rainDescription = this.getRainDescription(chance)
     const currentRain = this.getCurrentRainValue()
@@ -378,7 +380,7 @@ export class ClockWeatherCard extends LitElement {
   }
 
   private renderForecastItem (forecast: MergedWeatherForecast, minTemp: number, maxTemp: number, currentTemp: number | null, temperatureUnit: TemperatureUnit, hourly: boolean, displayText: string, maxColOneChars: number, maxTempChars: number): TemplateResult {
-    const weatherState = forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition
+    const weatherState = forecast.precipitation > 10 ? 'raindrops' : forecast.precipitation > 0 ? 'raindrop' : forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition
     const daytime: 'day' | 'night' | undefined = hourly ? (this.isHourDaytime(forecast.datetime.hour) ? 'day' : 'night') : 'day'
     const weatherIcon = this.toIcon(weatherState, 'fill', daytime, 'static')
     const tempUnit = this.getWeather().attributes.temperature_unit
@@ -506,7 +508,7 @@ export class ClockWeatherCard extends LitElement {
     isToday: boolean,
     currentRain: number | null
   ): TemplateResult {
-    const weatherState = forecast ? (forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition) : 'rainy'
+    const weatherState = forecast ? (forecast.precipitation > 10 ? 'raindrops' : forecast.precipitation > 0 ? 'raindrop' : forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition) : 'rainy'
     const weatherIcon = this.toIcon(weatherState, 'fill', 'day', 'static')
     const chanceText = `${Math.round(day.chance)}%`
 
@@ -601,7 +603,8 @@ export class ClockWeatherCard extends LitElement {
     const weather = this.getWeather()
     const state = weather.state
     const iconType = this.config.weather_icon_type
-    const icon = this.toIcon(state, iconType, undefined, this.getIconAnimationKind())
+    const iconState = this.getWeatherStateWithRainOverride(state)
+    const icon = this.toIcon(iconState, iconType, undefined, this.getIconAnimationKind())
     const prefix = this.config.uv_sensor_prefix ?? ''
     const category = this.getStringState(`${prefix}category_0`) ?? 'n/a'
     const weatherString = this.localize(`weather.${state}`)
@@ -662,7 +665,7 @@ export class ClockWeatherCard extends LitElement {
     maxColOneChars: number,
     maxValueChars: number
   ): TemplateResult {
-    const weatherState = forecast ? (forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition) : 'sunny'
+    const weatherState = forecast ? (forecast.precipitation > 10 ? 'raindrops' : forecast.precipitation > 0 ? 'raindrop' : forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition) : 'sunny'
     const weatherIcon = this.toIcon(weatherState, 'fill', 'day', 'static')
     const timeRange = `${day.startHour}–${day.endHour}`
 
@@ -714,7 +717,8 @@ export class ClockWeatherCard extends LitElement {
     const weather = this.getWeather()
     const state = weather.state
     const iconType = this.config.weather_icon_type
-    const icon = this.toIcon(state, iconType, undefined, this.getIconAnimationKind())
+    const iconState = this.getWeatherStateWithRainOverride(state)
+    const icon = this.toIcon(iconState, iconType, undefined, this.getIconAnimationKind())
     const prefix = this.config.bushfire_sensor_prefix ?? ''
     const rating = this.getStringState(`${prefix}0`) ?? 'n/a'
     const description = this.getBushfireDescription(rating)
@@ -780,7 +784,7 @@ export class ClockWeatherCard extends LitElement {
     maxColOneChars: number,
     maxValueChars: number
   ): TemplateResult {
-    const weatherState = forecast ? (forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition) : 'sunny'
+    const weatherState = forecast ? (forecast.precipitation > 10 ? 'raindrops' : forecast.precipitation > 0 ? 'raindrop' : forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition) : 'sunny'
     const weatherIcon = this.toIcon(weatherState, 'fill', 'day', 'static')
 
     return html`
@@ -1027,6 +1031,18 @@ export class ClockWeatherCard extends LitElement {
     if (config.forecast_type) return config.forecast_type
     if (config.hourly_forecast) return 'temp_hourly'
     return 'temp_daily'
+  }
+
+  private getWeatherStateWithRainOverride (state: string): string {
+    const forecasts = this.mergeForecasts(1, false)
+    const todayForecast = forecasts[0]
+    if (todayForecast && todayForecast.precipitation > 10) {
+      return 'raindrops'
+    }
+    if (todayForecast && todayForecast.precipitation > 0) {
+      return 'raindrop'
+    }
+    return state
   }
 
   private toIcon (weatherState: string, type: 'fill' | 'line', daytimeOverride: 'day' | 'night' | undefined, kind: 'static' | 'animated'): string {
