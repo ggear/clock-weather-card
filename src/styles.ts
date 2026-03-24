@@ -142,5 +142,6 @@ export default css`
   .value-unit-large {
     font-size: 0.5em;
     opacity: 0.7;
+    vertical-align: bottom;
   }
 `

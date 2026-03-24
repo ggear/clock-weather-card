@@ -9,7 +9,7 @@ declare global {
   }
 }
 
-export type ForecastType = 'temp_daily' | 'temp_hourly' | 'rain_daily' | 'uv_daily' | 'bushfire_daily'
+export type ForecastType = 'temp_daily' | 'temp_hourly' | 'rain_daily' | 'uv_daily' | 'bushfire_daily' | 'wind_daily'
 
 export interface ClockWeatherCardConfig extends LovelaceCardConfig {
   entity: string
@@ -44,6 +44,8 @@ export interface ClockWeatherCardConfig extends LovelaceCardConfig {
   uv_sensor_prefix?: string
   bushfire_sensor_prefix?: string
   bushfire_alerts_sensor?: string
+  wind_sensor?: string
+  wind_sensor_prefix?: string
   today_description_sensor?: string
 }
 
@@ -79,6 +81,8 @@ export interface MergedClockWeatherCardConfig extends LovelaceCardConfig {
   uv_sensor_prefix?: string
   bushfire_sensor_prefix?: string
   bushfire_alerts_sensor?: string
+  wind_sensor?: string
+  wind_sensor_prefix?: string
   today_description_sensor?: string
 }
 

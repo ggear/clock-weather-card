@@ -168,6 +168,20 @@ export class ClockWeatherCard extends LitElement {
           }
         }
       }
+
+      if (this.config.forecast_type === 'wind_daily') {
+        if (this.config.wind_sensor && oldHass.states[this.config.wind_sensor] !== this.hass.states[this.config.wind_sensor]) {
+          return true
+        }
+        if (this.config.wind_sensor_prefix) {
+          for (let i = 0; i < this.config.forecast_rows; i++) {
+            for (const suffix of ['speed_min_', 'speed_max_', 'dominant_direction_text_', 'dominant_direction_abbreviation_']) {
+              const id = `${this.config.wind_sensor_prefix}${suffix}${i}`
+              if (oldHass.states[id] !== this.hass.states[id]) return true
+            }
+          }
+        }
+      }
     }
 
     const descriptionSensor = this.config.today_description_sensor ?? (this.config.forecast_type === 'uv_daily' && this.config.uv_sensor_prefix ? `${this.config.uv_sensor_prefix}forecast_0` : undefined)
@@ -218,7 +232,7 @@ export class ClockWeatherCard extends LitElement {
               ${safeRender(() => this.renderToday())}
             </clock-weather-card-today>`
         : ''}
-          ${showForecast && this.config.forecast_type !== 'rain_daily' && this.config.forecast_type !== 'uv_daily' && this.config.forecast_type !== 'bushfire_daily'
+          ${showForecast && this.config.forecast_type !== 'rain_daily' && this.config.forecast_type !== 'uv_daily' && this.config.forecast_type !== 'bushfire_daily' && this.config.forecast_type !== 'wind_daily'
         ? html`
             <clock-weather-card-forecast>
               ${safeRender(() => this.renderForecast())}
@@ -244,6 +258,12 @@ export class ClockWeatherCard extends LitElement {
         : ''}
           ${this.config.forecast_type === 'bushfire_daily' && this.config.bushfire_alerts_sensor
         ? safeRender(() => this.renderBushfireAlerts())
+        : ''}
+          ${this.config.forecast_type === 'wind_daily' && this.config.wind_sensor_prefix
+        ? html`
+            <clock-weather-card-forecast>
+              ${safeRender(() => this.renderWindForecast())}
+            </clock-weather-card-forecast>`
         : ''}
         </div>
       </ha-card>
@@ -278,6 +298,9 @@ export class ClockWeatherCard extends LitElement {
     }
     if (this.config.forecast_type === 'bushfire_daily') {
       return this.renderTodayBushfire()
+    }
+    if (this.config.forecast_type === 'wind_daily') {
+      return this.renderTodayWind()
     }
     return this.renderTodayTemp()
   }
@@ -841,6 +864,150 @@ export class ClockWeatherCard extends LitElement {
     return ''
   }
 
+  private renderTodayWind (): TemplateResult {
+    const weather = this.getWeather()
+    const state = weather.state
+    const iconType = this.config.weather_icon_type
+    const iconState = this.getWeatherStateWithRainOverride(state)
+    const icon = this.toIcon(iconState, iconType, undefined, this.getIconAnimationKind())
+    const prefix = this.config.wind_sensor_prefix ?? ''
+    const directionText = (this.getStringState(`${prefix}dominant_direction_text_0`) ?? this.getStringState(`${prefix}dominant_direction_text_1`) ?? '').toLowerCase()
+    const speedMax = this.getNumericState(`${prefix}speed_max_0`) ?? this.getNumericState(`${prefix}speed_max_1`) ?? 0
+    const speedMin = this.getNumericState(`${prefix}speed_min_0`) ?? this.getNumericState(`${prefix}speed_min_1`) ?? 0
+    const windDescription = `Winds ${directionText} today, ranging from ${Math.round(speedMax)}km/h to ${Math.round(speedMin)}km/h`
+    const currentWind = this.getCurrentWindValue()
+
+    return html`
+      <clock-weather-card-today-left>
+        <img class="grow-img" src=${icon} />
+      </clock-weather-card-today-left>
+      <clock-weather-card-today-right>
+        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: 0.5rem; box-sizing: border-box;">
+          <clock-weather-card-today-right-wrap-top>
+            ${this.getTodayDescription(windDescription)}
+          </clock-weather-card-today-right-wrap-top>
+          <clock-weather-card-today-right-wrap-center style="justify-content: end;">
+            ${currentWind !== null
+              ? html`${Math.round(currentWind)}km/h`
+              : 'Nil'}
+          </clock-weather-card-today-right-wrap-center>
+          <clock-weather-card-today-right-wrap-bottom>
+            ${this.config.hide_date ? '' : this.date()}
+          </clock-weather-card-today-right-wrap-bottom>
+        </clock-weather-card-today-right-wrap>
+      </clock-weather-card-today-right>`
+  }
+
+  private getCurrentWindValue (): number | null {
+    if (this.config.wind_sensor) {
+      const val = this.getNumericState(this.config.wind_sensor)
+      if (val !== null) return val
+    }
+    if (this.config.wind_sensor_prefix) {
+      const val = this.getNumericState(`${this.config.wind_sensor_prefix}speed_max_0`)
+      if (val !== null) return val
+    }
+    return null
+  }
+
+  private renderWindForecast (): TemplateResult[] {
+    const prefix = this.config.wind_sensor_prefix
+    if (!prefix) return []
+
+    const maxRowsCount = this.config.forecast_rows
+
+    const currentWind = this.config.wind_sensor ? this.getNumericState(this.config.wind_sensor) : null
+
+    const windDays: Array<{ min: number, max: number, direction: string }> = []
+    for (let i = 0; i < maxRowsCount; i++) {
+      const minVal = this.getNumericState(`${prefix}speed_min_${i}`)
+      const maxVal = this.getNumericState(`${prefix}speed_max_${i}`)
+      const direction = this.getStringState(`${prefix}dominant_direction_abbreviation_${i}`) ?? ''
+      windDays.push({ min: minVal ?? 0, max: maxVal ?? 0, direction })
+    }
+
+    const globalMax = Math.max(...windDays.map(d => d.max), currentWind ?? 0, 1)
+
+    const forecasts = this.mergeForecasts(maxRowsCount, false)
+    const displayTexts = forecasts
+      .map(f => f.datetime)
+      .map(d => this.localize(`day.${d.weekday}`))
+    const maxColOneChars = this.getMaxColOneChars()
+    const { minTemp, maxTemp } = this.getGlobalTempRange()
+    const maxValueChars = this.getMaxTempChars(minTemp, maxTemp)
+
+    return windDays.map((day, i) => safeRender(() =>
+      this.renderWindForecastItem(day, globalMax, forecasts[i], displayTexts[i] ?? '', maxColOneChars, maxValueChars, i === 0, currentWind)
+    ))
+  }
+
+  private renderWindForecastItem (
+    day: { min: number, max: number, direction: string },
+    globalMax: number,
+    forecast: MergedWeatherForecast | undefined,
+    displayText: string,
+    maxColOneChars: number,
+    maxWindChars: number,
+    isToday: boolean,
+    currentWind: number | null
+  ): TemplateResult {
+    const weatherState = forecast ? (forecast.precipitation > 10 ? 'raindrops' : forecast.precipitation > 0 ? 'raindrop' : forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition) : 'sunny'
+    const weatherIcon = this.toIcon(weatherState, 'fill', 'day', 'static')
+    return html`
+      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size: ${(maxWindChars * 0.5)}rem;">
+        ${this.renderText(displayText)}
+        ${this.renderIcon(weatherIcon)}
+        ${this.renderText(`${Math.round(day.min)} km/h`, 'right')}
+        ${this.renderWindBar(globalMax, day.min, day.max, isToday, currentWind)}
+        <forecast-text>${Math.round(day.max)} <span class="value-unit">km/h</span></forecast-text>
+      </clock-weather-card-forecast-row>
+    `
+  }
+
+  private renderWindBar (globalMax: number, dayMin: number, dayMax: number, isToday: boolean, currentWind: number | null): TemplateResult {
+    const showBar = dayMax > 0
+    const { startPercent, endPercent } = this.calculateBarRangePercents(0, globalMax, dayMin, dayMax)
+    const moveRight = globalMax === 0 ? 0 : dayMin / globalMax
+    const gradient = this.createWindGradientString(dayMin, dayMax, globalMax)
+    const clampedWind = currentWind !== null ? Math.max(dayMin, Math.min(dayMax, currentWind)) : null
+    const showDot = isToday && clampedWind !== null
+
+    return html`
+      <forecast-temperature-bar>
+        <forecast-temperature-bar-background> </forecast-temperature-bar-background>
+        ${showBar
+          ? html`<forecast-temperature-bar-range
+              style="--move-right: ${moveRight.toFixed(2)}; --start-percent: ${startPercent.toFixed(2)}%; --end-percent: ${endPercent.toFixed(2)}%; --gradient: ${gradient};"
+            >
+              ${showDot ? this.renderForecastCurrentTemp(dayMin, dayMax, clampedWind) : ''}
+            </forecast-temperature-bar-range>`
+          : html`${showDot ? this.renderForecastCurrentTemp(0, globalMax, clampedWind) : ''}`}
+      </forecast-temperature-bar>
+    `
+  }
+
+  private createWindGradientString (dayMin: number, dayMax: number, globalMax: number): string {
+    const lightGreen = new Rgb(174, 230, 190)
+    const darkGreen = new Rgb(40, 140, 60)
+
+    function interpolate (ratio: number): Rgb {
+      return new Rgb(
+        Math.round(lightGreen.r + ratio * (darkGreen.r - lightGreen.r)),
+        Math.round(lightGreen.g + ratio * (darkGreen.g - lightGreen.g)),
+        Math.round(lightGreen.b + ratio * (darkGreen.b - lightGreen.b))
+      )
+    }
+
+    if (dayMin === dayMax) {
+      const color = interpolate(globalMax > 0 ? dayMin / globalMax : 0)
+      return `${color.toRgbString()} 0%, ${color.toRgbString()} 100%`
+    }
+
+    const colorMin = interpolate(globalMax > 0 ? dayMin / globalMax : 0)
+    const colorMax = interpolate(globalMax > 0 ? dayMax / globalMax : 0)
+    return `${colorMin.toRgbString()} 0%, ${colorMax.toRgbString()} 100%`
+  }
+
   private renderBushfireAlerts (): TemplateResult {
     const entityId = this.config.bushfire_alerts_sensor
     if (!entityId) return html``
@@ -1028,7 +1195,9 @@ export class ClockWeatherCard extends LitElement {
       rain_sensor_prefix: config.rain_sensor_prefix ? (config.rain_sensor_prefix.endsWith('_') ? config.rain_sensor_prefix : `${config.rain_sensor_prefix}_`) : undefined,
       uv_sensor_prefix: config.uv_sensor_prefix ? (config.uv_sensor_prefix.endsWith('_') ? config.uv_sensor_prefix : `${config.uv_sensor_prefix}_`) : undefined,
       bushfire_sensor_prefix: config.bushfire_sensor_prefix ? (config.bushfire_sensor_prefix.endsWith('_') ? config.bushfire_sensor_prefix : `${config.bushfire_sensor_prefix}_`) : undefined,
-      bushfire_alerts_sensor: config.bushfire_alerts_sensor ?? undefined
+      bushfire_alerts_sensor: config.bushfire_alerts_sensor ?? undefined,
+      wind_sensor: config.wind_sensor ?? undefined,
+      wind_sensor_prefix: config.wind_sensor_prefix ? (config.wind_sensor_prefix.endsWith('_') ? config.wind_sensor_prefix : `${config.wind_sensor_prefix}_`) : undefined
     }
   }
 
@@ -1255,6 +1424,16 @@ export class ClockWeatherCard extends LitElement {
       const bushfireSamples: number[] = ['NONE', 'MOD', 'HIGH', 'EXT', 'CAT'].map(s => s.length)
       bushfireSamples.push('0–24'.length)
       return Math.max(...bushfireSamples)
+    }
+
+    if (forecastType === 'wind_daily' && this.config.wind_sensor_prefix) {
+      const windSamples: number[] = []
+      for (let i = 0; i < this.config.forecast_rows; i++) {
+        const maxVal = this.getNumericState(`${this.config.wind_sensor_prefix}speed_max_${i}`) ?? 0
+        const minVal = this.getNumericState(`${this.config.wind_sensor_prefix}speed_min_${i}`) ?? 0
+        windSamples.push(`${Math.round(maxVal)} km/h`.length, `${Math.round(minVal)} km/h`.length)
+      }
+      return Math.max(...windSamples)
     }
 
     const unit = this.getConfiguredTemperatureUnit()
