@@ -62,7 +62,7 @@ export default css`
 
   clock-weather-card-forecast-row {
     display: grid;
-    grid-template-columns: var(--col-one-size) 2rem var(--temp-col-size, 2.1rem) auto var(--temp-col-size, 2.1rem);
+    grid-template-columns: var(--col-one-size) 2rem var(--temp-col-size-min, var(--temp-col-size, 2.1rem)) auto var(--temp-col-size-max, var(--temp-col-size, 2.1rem));
     align-items: center;
     column-gap: 0.5rem;
     padding-left: 1rem;

@@ -40,6 +40,7 @@ export interface ClockWeatherCardConfig extends LovelaceCardConfig {
   temperature_sensor_min?: string | number
   temperature_sensor_max?: string | number
   rain_sensor?: string
+  rain_rate_sensor?: string
   rain_sensor_prefix?: string
   uv_sensor_prefix?: string
   bushfire_sensor_prefix?: string
@@ -77,6 +78,7 @@ export interface MergedClockWeatherCardConfig extends LovelaceCardConfig {
   temperature_sensor_min?: string | number
   temperature_sensor_max?: string | number
   rain_sensor?: string
+  rain_rate_sensor?: string
   rain_sensor_prefix?: string
   uv_sensor_prefix?: string
   bushfire_sensor_prefix?: string
