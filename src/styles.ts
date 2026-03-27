@@ -139,9 +139,13 @@ export default css`
     opacity: 0.7;
   }
 
+  .today-value-wrap {
+    display: inline-flex;
+    align-items: baseline;
+  }
+
   .value-unit-large {
     font-size: 0.5em;
     opacity: 0.7;
-    vertical-align: bottom;
   }
 `
