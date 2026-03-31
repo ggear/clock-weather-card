@@ -40,6 +40,14 @@ import animatedLineRaindrops from './icons/line/svg/raindrops.svg'
 import animatedFillRaindrops from './icons/fill/svg/raindrops.svg'
 import animatedLineRaindrop from './icons/line/svg/raindrop.svg'
 import animatedFillRaindrop from './icons/fill/svg/raindrop.svg'
+import animatedFillCodeGreen from './icons/fill/svg/code-green.svg'
+import animatedLineCodeGreen from './icons/line/svg/code-green.svg'
+import animatedFillCodeYellow from './icons/fill/svg/code-yellow.svg'
+import animatedLineCodeYellow from './icons/line/svg/code-yellow.svg'
+import animatedFillCodeOrange from './icons/fill/svg/code-orange.svg'
+import animatedLineCodeOrange from './icons/line/svg/code-orange.svg'
+import animatedFillCodeRed from './icons/fill/svg/code-red.svg'
+import animatedLineCodeRed from './icons/line/svg/code-red.svg'
 
 import staticFillPartlyCloudyNightRain from './icons/fill/svg-static/partly-cloudy-night-rain.svg'
 import staticLinePartlyCloudyNightRain from './icons/line/svg-static/partly-cloudy-night-rain.svg'
@@ -83,6 +91,84 @@ import staticFillRaindrops from './icons/fill/svg-static/raindrops.svg'
 import staticLineRaindrops from './icons/line/svg-static/raindrops.svg'
 import staticFillRaindrop from './icons/fill/svg-static/raindrop.svg'
 import staticLineRaindrop from './icons/line/svg-static/raindrop.svg'
+import staticFillCodeGreen from './icons/fill/svg-static/code-green.svg'
+import staticLineCodeGreen from './icons/line/svg-static/code-green.svg'
+import staticFillCodeYellow from './icons/fill/svg-static/code-yellow.svg'
+import staticLineCodeYellow from './icons/line/svg-static/code-yellow.svg'
+import staticFillCodeOrange from './icons/fill/svg-static/code-orange.svg'
+import staticLineCodeOrange from './icons/line/svg-static/code-orange.svg'
+import staticFillCodeRed from './icons/fill/svg-static/code-red.svg'
+import staticLineCodeRed from './icons/line/svg-static/code-red.svg'
+
+export const bushfireIcons = {
+  animated: {
+    fill: {
+      'no rating': animatedFillCodeGreen,
+      moderate: animatedFillCodeGreen,
+      high: animatedFillCodeYellow,
+      extreme: animatedFillCodeOrange,
+      catastrophic: animatedFillCodeRed
+    },
+    line: {
+      'no rating': animatedLineCodeGreen,
+      moderate: animatedLineCodeGreen,
+      high: animatedLineCodeYellow,
+      extreme: animatedLineCodeOrange,
+      catastrophic: animatedLineCodeRed
+    }
+  },
+  static: {
+    fill: {
+      'no rating': staticFillCodeGreen,
+      moderate: staticFillCodeGreen,
+      high: staticFillCodeYellow,
+      extreme: staticFillCodeOrange,
+      catastrophic: staticFillCodeRed
+    },
+    line: {
+      'no rating': staticLineCodeGreen,
+      moderate: staticLineCodeGreen,
+      high: staticLineCodeYellow,
+      extreme: staticLineCodeOrange,
+      catastrophic: staticLineCodeRed
+    }
+  }
+}
+
+export const uvIcons = {
+  animated: {
+    fill: {
+      low: animatedFillCodeGreen,
+      moderate: animatedFillCodeGreen,
+      high: animatedFillCodeYellow,
+      'very high': animatedFillCodeOrange,
+      extreme: animatedFillCodeRed
+    },
+    line: {
+      low: animatedLineCodeGreen,
+      moderate: animatedLineCodeGreen,
+      high: animatedLineCodeYellow,
+      'very high': animatedLineCodeOrange,
+      extreme: animatedLineCodeRed
+    }
+  },
+  static: {
+    fill: {
+      low: staticFillCodeGreen,
+      moderate: staticFillCodeGreen,
+      high: staticFillCodeYellow,
+      'very high': staticFillCodeOrange,
+      extreme: staticFillCodeRed
+    },
+    line: {
+      low: staticLineCodeGreen,
+      moderate: staticLineCodeGreen,
+      high: staticLineCodeYellow,
+      'very high': staticLineCodeOrange,
+      extreme: staticLineCodeRed
+    }
+  }
+}
 
 export const animatedIcons = {
   line: {

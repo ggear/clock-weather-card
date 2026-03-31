@@ -48,6 +48,7 @@ export interface ClockWeatherCardConfig extends LovelaceCardConfig {
   wind_sensor?: string
   wind_sensor_prefix?: string
   today_description_sensor?: string
+  icon_descriptor_sensor?: string
 }
 
 export interface MergedClockWeatherCardConfig extends LovelaceCardConfig {
@@ -86,6 +87,7 @@ export interface MergedClockWeatherCardConfig extends LovelaceCardConfig {
   wind_sensor?: string
   wind_sensor_prefix?: string
   today_description_sensor?: string
+  icon_descriptor_sensor?: string
 }
 
 export const enum WeatherEntityFeature {
