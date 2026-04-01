@@ -13,7 +13,7 @@ export default css`
 
   clock-weather-card-today-left {
     display: flex;
-    width: 35%;
+    width: 25%;
     align-items: center;
     justify-content: center;
   }
@@ -25,7 +25,7 @@ export default css`
 
   clock-weather-card-today-right {
     display: flex;
-    width: 65%;
+    width: 75%;
     justify-content: space-around;
     align-items: center;
   }
