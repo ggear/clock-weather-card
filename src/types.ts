@@ -15,23 +15,18 @@ export interface ClockWeatherCardConfig extends LovelaceCardConfig {
   entity: string
   title?: string
   sun_entity?: string
-  temperature_sensor?: string
-  humidity_sensor?: string
+  today_value_sensor?: string
   weather_icon_type?: 'fill' | 'line'
   animated_icon?: boolean
   forecast_rows?: number
   locale?: string
   time_format?: '12' | '24'
   time_pattern?: string
-  date_pattern?: string
   hide_today_section?: boolean
   hide_forecast_section?: boolean
-  show_humidity?: boolean
   forecast_type?: ForecastType
   hourly_forecast?: boolean
   hide_current_hourly_forecast?: boolean
-  hide_clock?: boolean
-  hide_date?: boolean
   use_browser_time?: boolean
   time_zone?: string
   show_decimal?: boolean
@@ -39,14 +34,9 @@ export interface ClockWeatherCardConfig extends LovelaceCardConfig {
   aqi_sensor?: string
   temperature_sensor_min?: string | number
   temperature_sensor_max?: string | number
-  rain_sensor?: string
-  rain_rate_sensor?: string
-  rain_sensor_prefix?: string
-  uv_sensor_prefix?: string
-  bushfire_sensor_prefix?: string
-  bushfire_alerts_sensor?: string
-  wind_sensor?: string
-  wind_sensor_prefix?: string
+  today_value_secondary_sensor?: string
+  forecast_sensor_prefix?: string
+  forecast_secondary_sensor_prefix?: string
   today_description_sensor?: string
   icon_descriptor_sensor?: string
 }
@@ -55,22 +45,17 @@ export interface MergedClockWeatherCardConfig extends LovelaceCardConfig {
   entity: string
   title?: string
   sun_entity: string
-  temperature_sensor?: string
-  humidity_sensor?: string
+  today_value_sensor?: string
   weather_icon_type: 'fill' | 'line'
   animated_icon: boolean
   forecast_rows: number
   locale?: string
   time_format?: '12' | '24'
   time_pattern?: string
-  date_pattern: string
   hide_today_section: boolean
   hide_forecast_section: boolean
-  show_humidity: boolean
   forecast_type: ForecastType
   hide_current_hourly_forecast: boolean
-  hide_clock: boolean
-  hide_date: boolean
   use_browser_time: boolean
   time_zone?: string
   show_decimal: boolean
@@ -78,14 +63,9 @@ export interface MergedClockWeatherCardConfig extends LovelaceCardConfig {
   aqi_sensor?: string
   temperature_sensor_min?: string | number
   temperature_sensor_max?: string | number
-  rain_sensor?: string
-  rain_rate_sensor?: string
-  rain_sensor_prefix?: string
-  uv_sensor_prefix?: string
-  bushfire_sensor_prefix?: string
-  bushfire_alerts_sensor?: string
-  wind_sensor?: string
-  wind_sensor_prefix?: string
+  today_value_secondary_sensor?: string
+  forecast_sensor_prefix?: string
+  forecast_secondary_sensor_prefix?: string
   today_description_sensor?: string
   icon_descriptor_sensor?: string
 }
@@ -150,10 +130,6 @@ export interface TemperatureSensor extends HassEntity {
   attributes: {
     unit_of_measurement?: TemperatureUnit
   }
-}
-
-export interface HumiditySensor extends HassEntity {
-  state: string
 }
 
 export interface WeatherForecastEvent {

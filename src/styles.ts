@@ -33,6 +33,9 @@ export default css`
   clock-weather-card-today-right-wrap {
     display: flex;
     flex-direction: column;
+    width: 100%;
+    padding-right: 0.5rem;
+    box-sizing: border-box;
   }
 
   clock-weather-card-today-right-wrap-top {
@@ -48,12 +51,7 @@ export default css`
     font-size: 2rem;
     white-space: nowrap;
     align-items: center;
-    justify-content: center;
-  }
-
-  clock-weather-card-today-right-wrap-bottom {
-    display: flex;
-    justify-content: start;
+    justify-content: end;
   }
 
   clock-weather-card-forecast {
