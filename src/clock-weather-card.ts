@@ -1,4 +1,5 @@
 import { LitElement, html, type TemplateResult, type PropertyValues, type CSSResultGroup } from 'lit'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { customElement, property, state } from 'lit/decorators.js'
 import {
   type HomeAssistant,
@@ -18,7 +19,6 @@ import {
   Rgb,
   type TemperatureSensor,
   type TemperatureUnit,
-  type HumiditySensor,
   type Weather,
   WeatherEntityFeature,
   type WeatherForecast,
@@ -29,10 +29,319 @@ import { actionHandler } from './action-handler-directive'
 import { localize } from './localize/localize'
 import { type HassEntity, type HassEntityBase } from 'home-assistant-js-websocket'
 import { extractMostOccuring, max, min, roundIfNotNull, roundUp } from './utils'
-import { animatedIcons, staticIcons } from './images'
+import { animatedIcons, staticIcons, bushfireIcons, uvIcons } from './images'
 import { version } from '../package.json'
 import { safeRender } from './helpers'
 import { DateTime } from 'luxon'
+
+const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
+  sunny: [
+    'Suns out, guns out',
+    'Blessed by the sun',
+    'Here comes the sun, and it\'s alright',
+    'All you need is sun',
+    'Sunny! Amaze! Amaze! Amaze!',
+    '"It\'s as warm as my lobster thermidor" -Batman',
+    'Honey, where are my pants? Outside in this sun',
+    'Everything is awesome(ly) sunny',
+    'This sun\'s gonna get stuck in your head',
+    '17 days? We wont\'t last 17 hours in this sun',
+    'Hasta la vista, clouds',
+    'You\'re gonna need a bigger hat',
+    'You know why (it\'s sunny)',
+    'Houston, we have sunshine',
+    'My knees hurt. Also, it\'s sunny',
+    'The dogs are barking. Also, it\'s sunny',
+    'Sun-bum is doing his happy dance!',
+    'Perfect day, if Dad fixed the pool',
+    'Just like 99% of Perth days, sunny!',
+    'Zero clouds, no notes',
+    'Skip the Vitamin D tablet today!',
+    '"It\'s my time to shine" -Sun',
+    'Get our squint on',
+    'Its like a Windows background out there',
+    'Engage sunshine. Sunshine engaged',
+    'If atop did weather, it would say Sunny',
+    'Solar panels will be happy today!',
+    'I am walking on sunshine, yeah, yeah',
+    'Sunshine inventory full, Tamagotchi mad',
+    'Where\'s my sunglasses (pants)?',
+    'Marsupalami, it\'s Graham for sunshine',
+    'To infinity and sunny beyond',
+    'That\'s not sunshine. THAT\'S sunshine',
+    'Nobody puts sunshine in a corner',
+    '"I\'m kind of a big deal" -Sun',
+    'You can\'t handle the sun',
+    'Yippee-ki-yay, it\'s sunny out',
+    'Sun. James Sun.',
+    'Game over, man, it\'s gorgeous out',
+    'Stay frosty, it\'s too sunny for that',
+    'Never go full sun',
+    'I\'m Ron Burgundy and it\'s sunny today?',
+    '60% of the time, it\'s sunny every time',
+    'I\'m in a glass case of sunshine',
+    'Sunny? Baxter, ya know I don\'t speak Spanish',
+    'It\'s so damn hot, milk was a bad choice',
+    'It\'s weapons grade sun out there!',
+    'You had me at sunshine',
+    'Sunshine, shaken not stirred',
+    'Skyfall? No, just sunshine falling',
+    'May the rays be with you',
+    'To be or not to be… outside',
+    'Life is like a box of sunshine',
+    'I\'m a sunny island! I\'m sunny Ibiza!',
+    'Stay classy, sunshine',
+    'This weather belongs in a museum',
+    'Only the penitent man brought his hat',
+    'Come with me if you want to tan',
+    'Take the red pill, see how sunny it really is',
+    'You are The ONE (who checked the forecast)',
+    'There is no spoon, there is only sunshine',
+    'It\'s not personal, it\'s just sunny',
+    'Keep your friends close, you\'re hat closer',
+    'Life is pain, sunshine is not',
+    'I am trapped in a glass case of sunshine',
+    'Creeper? Aww man, too sunny to care',
+    'This is fine, said Steve, squinting',
+    'Diamonds are forever, sunshine is better',
+    'Open the pod bay doors HAL, it\'s gorgeous out',
+    'Steve has left the mine, it\'s gorgeous out',
+    'Don\'t mine at night, mine in this sunshine',
+    'Eve scanned for clouds, found none',
+    'As you wish, it\'s sunny',
+    'Life is pain, sunshine is not',
+    'Open those solar panels Wall-E, its sunny!',
+    'Inconceivable! Not a cloud in sight',
+    'Punch it Chewie, it\'s sunny',
+    '"Anyone can cook in this sun" -Gusteau',
+    'The sky is Ada-Edudance level happy',
+    'I feel the need, the need for sun'
+  ],
+  clear: [
+    'The Cosmos says - "Look up"',
+    'Stars out! Amaze! Amaze! Amaze!',
+    'Sweet Caroline, look at those stars',
+    'Ziggy played guitar, under these stars',
+    'Heroes, just for one clear night',
+    'Life on Mars, nope, just stars on Earth',
+    'Modern love, ancient stars tonight',
+    'Young Americans, old stars tonight',
+    'Is this the real sky, or just fantasy',
+    'Eve scanned for clouds, found none',
+    'Clear night, "My God, it\'s full of stars"',
+    'The stars are out, the universe says hi!',
+    'Galileo would be smiling tonight',
+    'The cosmos is in 4K tonight',
+    'The universe is showing off tonight',
+    'Hubble is jealous of our view tonight',
+    'The Milky Way is clocking in tonight',
+    'The night shift is stunning tonight',
+    'Best seat in the universe, look up',
+    'Ziggy Stardust would approve tonight',
+    'The truth is out there, so are the stars',
+    'Interstellar, no wormhole required tonight',
+    'Phone home tonight, skies are clear ET',
+    'We\'re gonna need a bigger telescope',
+    'Starman waiting in the sky, Bowie spot on',
+    'Space oddity? Not tonight, just stars',
+    'This is ground control, skies are clear',
+    'It\'s a van Gogh "Stary Night" out there',
+    'Star gazing night, Dad needs a telescope',
+    'Twinkle twinkle 200 sextillion stars',
+    '2 trillion (10¹²) galaxies to see tonight',
+    '200 sextillion (10²³) stars to see tonight',
+    '700 quintillion (10¹⁸) systems to see tonight'
+  ],
+  partly_cloudy: [
+    'Houston, we have a bit of cloud problem',
+    'Clouds ... not really Amaze! Amaze! Amaze!',
+    'You\'ve got mail, I mean clouds',
+    'You know why (it\'s cloudy)',
+    'Every barn, every outhouse, find that sun',
+    'Eve scanned for clouds, found some',
+    'Have fun storming the clouds',
+    'It\'s not personal Kathleen, just cloudy',
+    'Say hello to my little sun patch',
+    '60% of the time, it\'s cloudy every time',
+    'In space, no one can hear the sky shrug',
+    'To cloud or not to cloud, that is the forecast',
+    'Houston, we have a cloud problem',
+    'You talking to me, cloud?',
+    'Just a girl, standing under some clouds',
+    'Clear skies winning, clouds are trying',
+    'The sky is vacillating',
+    'Punch it Chewie, it\'s sunny ... ish',
+    'Half time: Clear Skies 2, Clouds 1',
+    'Sky at Edwin/Ada movie indecision levels',
+    'The force is not so strong with this sun',
+    'Is it mostly clear or partly cloudy?'
+  ],
+  cloudy: [
+    'So many clouds ... No Amaze! Amaze! Amaze!',
+    'Yesterday, the clouds seemed so far away',
+    'I\'m (Lego) Batman, I don\'t need sunshine',
+    '"I only work in black/grey skies" -Batman',
+    '"Iron Man sucks. So does this weather" -Batman',
+    'These cloud\'s gonna get stuck in your head',
+    'You know why (it\'s cloudy)',
+    'Grumpier sky than Edwin on a photo shoot',
+    'The force is strong with these clouds',
+    'The one armed man took the sunshine',
+    'Sorry Dave, clouds are staying',
+    'Keep the change ya filthy clouds',
+    'Skynet predicted these clouds',
+    'Eve scanned for clouds, found many!',
+    'These are not the clouds you\'re looking for',
+    '60% of the time, it\'s cloudy every time',
+    'I\'ll make these clouds an offer',
+    'Game over man, bring a jacket',
+    'Snakes. Why did it have to be clouds?',
+    'Roads? Where we\'re going, need sun',
+    'I say nuke the clouds from orbit',
+    'Never go full cloudy',
+    'It could be London out there',
+    'Half time: Clear skies 0, Cloud 1',
+    'Just keep swimming, it\'s grey out',
+    'Cloud committee: block sky, carried',
+    'To infinity and cloudy beyond!'
+  ],
+  drizzle: [
+    'Drizzle ... No Amaze! Amaze! Amaze!',
+    'This drizzle\'s gonna get stuck in your head',
+    'Houston, we have a bit of drizzle problem',
+    'You know why (it\'s drizzly)',
+    'Punch it Chewie, it\'s drizzly',
+    'Skynet predicted this drizzle',
+    'Survival mode: drizzle makes it wetter',
+    'Eve scanned for rain, found a little',
+    'Chance of rain would be a fine thing',
+    'Only penitent man avoids the drizzle',
+    'Yippee-ki-yay, sort of raining',
+    '60% of the time, it drizzles every time',
+    'Come on rain, we need you!',
+    'A brief sprinkle, your hair will survive',
+    'Just enough rain to bring the cookatoos out',
+    'Too shy to be real rain, counts though',
+    'Dad wouldn\'t stress, but would Nanny?'
+  ],
+  rain: [
+    'Blessed by the rain',
+    'Help me if you can I am feelin rainy',
+    'Rain ... No Amaze! Amaze! Amaze!',
+    'Blame it on the rain, yeah, yeah',
+    'This rain\'s gonna get stuck in your head',
+    'Houston, we have a rain problem',
+    'With this rain about, count me out',
+    'You know why (it\'s rainy)',
+    'Punch it Chewie, it\'s rainy',
+    'Skynet predicted this rain',
+    'Merry Christmas ya filthy weather',
+    'It\'s weapons grade rain today!',
+    'Directive: find rain, found plenty!',
+    'Mr Anderson, prepare to get wet',
+    'By the beard of Zeus, it\'s wet!',
+    'In space, no one hears you drenching',
+    'You\'re gonna need a bigger umbrella',
+    'I hope Dad cleaned the gutters out',
+    'Cockatoos screeching, rain\'s coming!',
+    'Grandma\'s favourite, bring on the rain!',
+    'Raining cats and dogs, pet-free zone violated',
+    'Keep your friends close, brolly closer',
+    'I feel the need, the need for rain'
+  ],
+  thunderstorm: [
+    'Zeus is booked in today, Mums favourite!',
+    'Red Alert! Thunderstorm, not gaming time!',
+    'I\'ve got a bad feeling about this weather'
+  ],
+  windy: [
+    'I\'ll have what the wind is having',
+    'You are the wind beneath my wings',
+    'Leave the wind, take the cannoli',
+    'It\'s not personal, it\'s just windy',
+    'Frankly my dear, I don\'t give a gust',
+    'I\'ll be back ... once the wind dies down'
+  ],
+  hazy: [
+    'As hazy as a Coopers Pale Ale out there'
+  ],
+  fog: [
+    'It\'s as foggy as Toowoomba out there!'
+  ],
+  dust: [
+    'The Pilbara called, it wants its dust back!'
+  ],
+  frost: [
+    'Frosty the snowman was a jolly happy soul'
+  ],
+  snow: [
+    'Snow! In Darlington? This has to be a bug!'
+  ],
+  tropical_cyclone: [
+    'Its going to get crazy, take cover'
+  ]
+}
+
+const ICON_DESCRIPTOR_TO_CATEGORY: Record<string, string> = {
+  sunny: 'sunny',
+  clear: 'clear',
+  mostly_sunny: 'partly_cloudy',
+  partly_cloudy: 'partly_cloudy',
+  cloudy: 'cloudy',
+  overcast: 'cloudy',
+  hazy: 'hazy',
+  fog: 'fog',
+  dust: 'dust',
+  chance_shower: 'drizzle',
+  light_shower: 'drizzle',
+  shower: 'drizzle',
+  drizzle: 'drizzle',
+  light_rain: 'drizzle',
+  showers: 'drizzle',
+  rain: 'drizzle',
+  heavy_shower: 'rain',
+  heavy_rain: 'rain',
+  chance_thunderstorm: 'thunderstorm',
+  thunderstorm: 'thunderstorm',
+  windy: 'windy',
+  frost: 'frost',
+  snow: 'snow',
+  tropical_cyclone: 'tropical_cyclone'
+}
+
+const RAIN_CHANCE_DESCRIPTIONS: Array<[number, string, string]> = [
+  [0, 'No chance of rain', "Don't worry about the brolly!"],
+  [30, 'Low chance of rain', 'Pack your hope, not the brolly!'],
+  [60, 'Medium chance of rain', 'I would risk no brolly, would Nanny?'],
+  [100, 'High chance of rain', "The clouds aren't bluffing, brolly time!"]
+]
+
+const ICON_DESCRIPTOR_TO_WEATHER_STATE: Record<string, string> = {
+  sunny: 'sunny',
+  clear: 'clear-night',
+  mostly_sunny: 'sunny',
+  partly_cloudy: 'partlycloudy',
+  cloudy: 'cloudy',
+  overcast: 'cloudy',
+  hazy: 'fog',
+  fog: 'fog',
+  dust: 'exceptional',
+  chance_shower: 'rainy',
+  light_shower: 'rainy',
+  shower: 'rainy',
+  showers: 'rainy',
+  heavy_shower: 'pouring',
+  drizzle: 'rainy',
+  light_rain: 'rainy',
+  rain: 'rainy',
+  heavy_rain: 'pouring',
+  chance_thunderstorm: 'lightning',
+  thunderstorm: 'lightning-rainy',
+  windy: 'windy',
+  frost: 'snowy',
+  snow: 'snowy',
+  tropical_cyclone: 'exceptional'
+}
 
 console.info(
   `%c  CLOCK-WEATHER-CARD \n%c Version: ${version}`,
@@ -41,9 +350,8 @@ console.info(
 );
 
 // This puts your card into the UI card picker dialog
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
 (window as any).customCards = (window as any).customCards || [];
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).customCards.push({
   type: 'clock-weather-card',
   name: 'Clock Weather Card',
@@ -135,60 +443,39 @@ export class ClockWeatherCard extends LitElement {
         return true
       }
 
-      if (this.config.forecast_type === 'uv_daily' && this.config.uv_sensor_prefix) {
-        for (let i = 0; i < this.config.forecast_rows; i++) {
-          for (const suffix of ['category_', 'max_index_', 'start_time_', 'end_time_', 'forecast_']) {
-            const id = `${this.config.uv_sensor_prefix}${suffix}${i}`
-            if (oldHass.states[id] !== this.hass.states[id]) return true
-          }
-        }
-      }
-
-      if (this.config.forecast_type === 'bushfire_daily' && this.config.bushfire_sensor_prefix) {
-        for (let i = 0; i < this.config.forecast_rows; i++) {
-          const id = `${this.config.bushfire_sensor_prefix}${i}`
-          if (oldHass.states[id] !== this.hass.states[id]) return true
-        }
-      }
-
-      if (this.config.bushfire_alerts_sensor && oldHass.states[this.config.bushfire_alerts_sensor] !== this.hass.states[this.config.bushfire_alerts_sensor]) {
+      if (this.config.today_value_sensor && oldHass.states[this.config.today_value_sensor] !== this.hass.states[this.config.today_value_sensor]) {
         return true
       }
 
-      if (this.config.forecast_type === 'rain_daily') {
-        if (this.config.rain_sensor && oldHass.states[this.config.rain_sensor] !== this.hass.states[this.config.rain_sensor]) {
-          return true
-        }
-        if (this.config.rain_sensor_prefix) {
-          for (let i = 0; i < this.config.forecast_rows; i++) {
-            for (const suffix of ['amount_min_', 'amount_max_', 'chance_']) {
-              const id = `${this.config.rain_sensor_prefix}${suffix}${i}`
-              if (oldHass.states[id] !== this.hass.states[id]) return true
-            }
-          }
-        }
+      if (this.config.today_value_secondary_sensor && oldHass.states[this.config.today_value_secondary_sensor] !== this.hass.states[this.config.today_value_secondary_sensor]) {
+        return true
       }
 
-      if (this.config.forecast_type === 'wind_daily') {
-        if (this.config.wind_sensor && oldHass.states[this.config.wind_sensor] !== this.hass.states[this.config.wind_sensor]) {
-          return true
-        }
-        if (this.config.wind_sensor_prefix) {
-          for (let i = 0; i < this.config.forecast_rows; i++) {
-            for (const suffix of ['speed_min_', 'speed_max_', 'dominant_direction_text_', 'dominant_direction_abbreviation_']) {
-              const id = `${this.config.wind_sensor_prefix}${suffix}${i}`
-              if (oldHass.states[id] !== this.hass.states[id]) return true
-            }
+      if (this.config.forecast_secondary_sensor_prefix && oldHass.states[this.config.forecast_secondary_sensor_prefix] !== this.hass.states[this.config.forecast_secondary_sensor_prefix]) {
+        return true
+      }
+
+      if (this.config.forecast_sensor_prefix) {
+        const suffixes = this.getForecastSuffixes()
+        for (let i = 0; i < this.config.forecast_rows; i++) {
+          for (const suffix of suffixes) {
+            const id = `${this.config.forecast_sensor_prefix}${suffix}${i}`
+            if (oldHass.states[id] !== this.hass.states[id]) return true
           }
         }
       }
     }
 
-    const descriptionSensor = this.config.today_description_sensor ?? (this.config.forecast_type === 'uv_daily' && this.config.uv_sensor_prefix ? `${this.config.uv_sensor_prefix}forecast_0` : undefined)
+    const descriptionSensor = this.config.today_description_sensor ?? (this.config.forecast_type === 'uv_daily' && this.config.forecast_sensor_prefix ? `${this.config.forecast_sensor_prefix}forecast_0` : undefined)
     if (descriptionSensor && oldHass) {
       if (oldHass.states[descriptionSensor] !== this.hass.states[descriptionSensor]) return true
       const fallbackSensor = descriptionSensor.endsWith('_0') ? descriptionSensor.replace(/_0$/, '_1') : undefined
       if (fallbackSensor && oldHass.states[fallbackSensor] !== this.hass.states[fallbackSensor]) return true
+    }
+
+    const iconDescriptorSensor = this.config.icon_descriptor_sensor
+    if (iconDescriptorSensor && oldHass) {
+      if (oldHass.states[iconDescriptorSensor] !== this.hass.states[iconDescriptorSensor]) return true
     }
 
     return hasConfigOrEntityChanged(this, changedProps, false)
@@ -232,38 +519,14 @@ export class ClockWeatherCard extends LitElement {
               ${safeRender(() => this.renderToday())}
             </clock-weather-card-today>`
         : ''}
-          ${showForecast && this.config.forecast_type !== 'rain_daily' && this.config.forecast_type !== 'uv_daily' && this.config.forecast_type !== 'bushfire_daily' && this.config.forecast_type !== 'wind_daily'
+          ${this.shouldShowForecast(showForecast)
         ? html`
             <clock-weather-card-forecast>
-              ${safeRender(() => this.renderForecast())}
+              ${safeRender(() => this.renderForecastByType())}
             </clock-weather-card-forecast>`
         : ''}
-          ${this.config.forecast_type === 'rain_daily' && this.config.rain_sensor_prefix
-        ? html`
-            <clock-weather-card-forecast>
-              ${safeRender(() => this.renderRainForecast())}
-            </clock-weather-card-forecast>`
-        : ''}
-          ${this.config.forecast_type === 'uv_daily' && this.config.uv_sensor_prefix
-        ? html`
-            <clock-weather-card-forecast>
-              ${safeRender(() => this.renderUvForecast())}
-            </clock-weather-card-forecast>`
-        : ''}
-          ${this.config.forecast_type === 'bushfire_daily' && this.config.bushfire_sensor_prefix
-        ? html`
-            <clock-weather-card-forecast>
-              ${safeRender(() => this.renderBushfireForecast())}
-            </clock-weather-card-forecast>`
-        : ''}
-          ${this.config.forecast_type === 'bushfire_daily' && this.config.bushfire_alerts_sensor
+          ${this.config.forecast_type === 'bushfire_daily' && this.config.forecast_secondary_sensor_prefix
         ? safeRender(() => this.renderBushfireAlerts())
-        : ''}
-          ${this.config.forecast_type === 'wind_daily' && this.config.wind_sensor_prefix
-        ? html`
-            <clock-weather-card-forecast>
-              ${safeRender(() => this.renderWindForecast())}
-            </clock-weather-card-forecast>`
         : ''}
         </div>
       </ha-card>
@@ -305,6 +568,109 @@ export class ClockWeatherCard extends LitElement {
     return this.renderTodayTemp()
   }
 
+  private renderTodayLayout (icon: string, topContent: TemplateResult | string, centerContent: TemplateResult | string): TemplateResult {
+    return html`
+      <clock-weather-card-today-left>
+        <img class="grow-img" src=${icon} />
+      </clock-weather-card-today-left>
+      <clock-weather-card-today-right>
+        <clock-weather-card-today-right-wrap>
+          <clock-weather-card-today-right-wrap-top>
+            ${topContent}
+          </clock-weather-card-today-right-wrap-top>
+          <clock-weather-card-today-right-wrap-center>
+            ${centerContent}
+          </clock-weather-card-today-right-wrap-center>
+        </clock-weather-card-today-right-wrap>
+      </clock-weather-card-today-right>`
+  }
+
+  private shouldShowForecast (showForecast: boolean): boolean {
+    const type = this.config.forecast_type
+    const prefix = this.config.forecast_sensor_prefix
+    if (['rain_daily', 'uv_daily', 'bushfire_daily', 'wind_daily'].includes(type)) {
+      return !!prefix
+    }
+    return showForecast
+  }
+
+  private renderForecastByType (): TemplateResult[] {
+    switch (this.config.forecast_type) {
+      case 'rain_daily': return this.renderRainForecast()
+      case 'uv_daily': return this.renderUvForecast()
+      case 'bushfire_daily': return this.renderBushfireForecast()
+      case 'wind_daily': return this.renderWindForecast()
+      default: return this.renderForecast()
+    }
+  }
+
+  private getForecastWeatherState (forecast: MergedWeatherForecast | undefined, useIconState: boolean, fallback: string): string {
+    const defaultState = forecast
+      ? (forecast.precipitation > 10 ? 'raindrops' : forecast.precipitation > 0 ? 'raindrop' : forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition)
+      : fallback
+    return useIconState ? this.getIconState(forecast?.condition ?? fallback) : defaultState
+  }
+
+  private getForecastLayout (maxRowsCount: number, hourly: boolean = false): {
+    forecasts: MergedWeatherForecast[]
+    displayTexts: string[]
+    maxColOneChars: number
+    minColChars: number
+    maxColChars: number
+  } {
+    const forecasts = this.mergeForecasts(maxRowsCount, hourly)
+    const displayTexts = forecasts
+      .map(f => f.datetime)
+      .map(d => hourly ? this.time(d) : this.localize(`day.${d.weekday}`))
+    const maxColOneChars = this.getMaxColOneChars()
+    const { minTemp, maxTemp } = this.getGlobalTempRange()
+    const { minColChars, maxColChars } = this.getMaxTempChars(minTemp, maxTemp)
+    return { forecasts, displayTexts, maxColOneChars, minColChars, maxColChars }
+  }
+
+  private renderBar (
+    showBar: boolean,
+    startPercent: number,
+    endPercent: number,
+    moveRight: number,
+    gradient: string,
+    dotValue: number | null,
+    dotMin: number = 0,
+    dotMax: number = 0
+  ): TemplateResult {
+    return html`
+      <forecast-temperature-bar>
+        <forecast-temperature-bar-background> </forecast-temperature-bar-background>
+        ${showBar
+          ? html`<forecast-temperature-bar-range
+              style="--move-right: ${moveRight.toFixed(2)}; --start-percent: ${startPercent.toFixed(2)}%; --end-percent: ${endPercent.toFixed(2)}%; --gradient: ${gradient};"
+            >
+            </forecast-temperature-bar-range>`
+          : ''}
+        ${dotValue != null ? this.renderForecastCurrentTemp(dotMin, dotMax, dotValue) : ''}
+      </forecast-temperature-bar>
+    `
+  }
+
+  private enforceMinBarWidth (startPercent: number, endPercent: number, minPercent: number = 10): { startPercent: number, endPercent: number } {
+    if (endPercent - startPercent < minPercent) {
+      const mid = (startPercent + endPercent) / 2
+      startPercent = Math.max(0, mid - minPercent / 2)
+      endPercent = Math.min(100, startPercent + minPercent)
+    }
+    return { startPercent, endPercent }
+  }
+
+  private getForecastSuffixes (): string[] {
+    switch (this.config.forecast_type) {
+      case 'uv_daily': return ['category_', 'max_index_', 'start_time_', 'end_time_', 'forecast_']
+      case 'bushfire_daily': return ['']
+      case 'rain_daily': return ['amount_min_', 'amount_max_', 'chance_']
+      case 'wind_daily': return ['speed_min_', 'speed_max_', 'dominant_direction_text_', 'dominant_direction_abbreviation_']
+      default: return []
+    }
+  }
+
   private renderTodayTemp (): TemplateResult {
     const weather = this.getWeather()
     const state = weather.state
@@ -314,75 +680,48 @@ export class ClockWeatherCard extends LitElement {
     const aqi = this.getAqi()
     const aqiBackgroundColor = this.getAqiBackgroundColor(aqi)
     const aqiTextColor = this.getAqiTextColor(aqi)
-    const humidity = roundIfNotNull(this.getCurrentHumidity())
     const iconType = this.config.weather_icon_type
-    const iconState = this.getWeatherStateWithRainOverride(state)
+    const iconState = this.getIconState(state)
     const icon = this.toIcon(iconState, iconType, undefined, this.getIconAnimationKind())
     const weatherString = this.localize(`weather.${state}`)
-    const localizedTemp = temp !== null ? this.toConfiguredTempWithUnit(tempUnit, temp) : null
-    const localizedHumidity = humidity !== null ? `${humidity}% ${this.localize('misc.humidity')}` : null
     const localizedApparent = apparentTemp !== null ? this.toConfiguredTempWithUnit(tempUnit, apparentTemp) : null
     const apparentString = this.localize('misc.feels-like')
     const aqiString = this.localize('misc.aqi')
 
-    return html`
-      <clock-weather-card-today-left>
-        <img class="grow-img" src=${icon} />
-      </clock-weather-card-today-left>
-      <clock-weather-card-today-right>
-        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: 0.5rem; box-sizing: border-box;">
-          <clock-weather-card-today-right-wrap-top>
-            ${this.getTodayDescription(this.config.hide_clock ? weatherString : localizedTemp ? `${weatherString}, ${localizedTemp}` : weatherString)}
-            ${this.config.show_humidity && localizedHumidity ? html`<br>${localizedHumidity}` : ''}
-            ${this.config.apparent_sensor && apparentTemp ? html`<br>${apparentString}: ${localizedApparent}` : ''}
-            ${this.config.aqi_sensor && aqi !== null ? html`<br><aqi style="background-color: ${aqiBackgroundColor}; color: ${aqiTextColor};">${aqi} ${aqiString}</aqi>` : ''}
-          </clock-weather-card-today-right-wrap-top>
-          <clock-weather-card-today-right-wrap-center style="justify-content: end;">
-            ${this.config.hide_clock ? localizedTemp ?? 'n/a' : this.time()}
-          </clock-weather-card-today-right-wrap-center>
-          <clock-weather-card-today-right-wrap-bottom>
-            ${this.config.hide_date ? '' : this.date()}
-          </clock-weather-card-today-right-wrap-bottom>
-        </clock-weather-card-today-right-wrap>
-      </clock-weather-card-today-right>`
+    const topContent = html`
+      ${this.getTodayDescription(weatherString)}
+      ${this.config.apparent_sensor && apparentTemp ? html`<br>${apparentString}: ${localizedApparent}` : ''}
+      ${this.config.aqi_sensor && aqi !== null ? html`<br><aqi style="background-color: ${aqiBackgroundColor}; color: ${aqiTextColor};">${aqi} ${aqiString}</aqi>` : ''}
+    `
+    const centerContent = temp !== null
+      ? html`<span class="today-value-wrap">${this.toConfiguredTempWithoutUnit(tempUnit, temp)}<span class="value-unit-large">${this.getConfiguredTemperatureUnit()}</span></span>`
+      : 'n/a'
+
+    return this.renderTodayLayout(icon, topContent, centerContent)
   }
 
   private renderTodayRain (): TemplateResult {
     const weather = this.getWeather()
     const state = weather.state
     const iconType = this.config.weather_icon_type
-    const iconState = this.getWeatherStateWithRainOverride(state)
-    const icon = this.toIcon(iconState, iconType, undefined, this.getIconAnimationKind())
-    const chance = this.config.rain_sensor_prefix ? this.getNumericState(`${this.config.rain_sensor_prefix}chance_0`) ?? 0 : 0
-    const rainDescription = this.getRainDescription(chance)
-    const currentRain = this.getCurrentRainValue()
+    const prefix = this.config.forecast_sensor_prefix
+    const chance = prefix ? this.getNumericState(`${prefix}chance_0`) ?? 0 : 0
+    const rainIconState = chance > 80 ? 'raindrops' : chance > 0 ? 'raindrop' : this.getIconState(state)
+    const icon = this.toIcon(rainIconState, iconType, undefined, this.getIconAnimationKind())
+    const currentRain = this.getCurrentValue('amount_max_0')
 
-    return html`
-      <clock-weather-card-today-left>
-        <img class="grow-img" src=${icon} />
-      </clock-weather-card-today-left>
-      <clock-weather-card-today-right>
-        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: 0.5rem; box-sizing: border-box;">
-          <clock-weather-card-today-right-wrap-top>
-            ${this.getTodayDescription(rainDescription)}
-          </clock-weather-card-today-right-wrap-top>
-          <clock-weather-card-today-right-wrap-center style="justify-content: end;">
-            ${currentRain !== null && currentRain > 0
-              ? html`${currentRain} <span class="value-unit-large">mm</span>`
-              : 'Nil'}
-          </clock-weather-card-today-right-wrap-center>
-          <clock-weather-card-today-right-wrap-bottom>
-            ${this.config.hide_date ? '' : this.date()}
-          </clock-weather-card-today-right-wrap-bottom>
-        </clock-weather-card-today-right-wrap>
-      </clock-weather-card-today-right>`
+    const centerContent = currentRain !== null && currentRain > 0
+      ? html`<span class="today-value-wrap">${currentRain} <span class="value-unit-large">mm</span></span>${this.config.today_value_secondary_sensor
+          ? html`&nbsp; <span class="today-value-wrap">${this.getNumericState(this.config.today_value_secondary_sensor) ?? 0} <span class="value-unit-large">mm/h</span></span>`
+          : ''}`
+      : 'Nil'
+
+    return this.renderTodayLayout(icon, this.getTodayDescription(this.getRainDescription(chance)), centerContent)
   }
 
   private getRainDescription (chance: number): string {
-    if (chance === 0) return 'No chance of rain,\ndon\'t worry about the brolly!'
-    if (chance <= 30) return 'Low chance of rain,\nmaybe pack that brolly!'
-    if (chance <= 60) return 'Medium chance of rain,\nmaybe pack that brolly!'
-    return 'High chance of rain,\nif you don\'t pack that brolly you will be sorry!'
+    const entry = RAIN_CHANCE_DESCRIPTIONS.find(([threshold]) => chance <= threshold) ?? RAIN_CHANCE_DESCRIPTIONS[RAIN_CHANCE_DESCRIPTIONS.length - 1]
+    return `${entry[1]}\n${entry[2]}`
   }
 
   private renderForecast (): TemplateResult[] {
@@ -399,18 +738,19 @@ export class ClockWeatherCard extends LitElement {
     const displayTexts = forecasts
       .map(f => f.datetime)
       .map(d => hourly ? this.time(d) : this.localize(`day.${d.weekday}`))
-    const maxColOneChars = this.getMaxColOneChars()
-    const maxTempChars = this.getMaxTempChars(minTemp, maxTemp)
+    const maxColOneChars = this.getMaxColOneChars(hourly)
+    const { minColChars, maxColChars } = this.getMaxTempChars(minTemp, maxTemp)
 
-    return forecasts.map((forecast, i) => safeRender(() => this.renderForecastItem(forecast, minTemp, maxTemp, currentTemp, temperatureUnit, hourly, displayTexts[i], maxColOneChars, maxTempChars)))
+    return forecasts.map((forecast, i) => safeRender(() => this.renderForecastItem(forecast, minTemp, maxTemp, currentTemp, temperatureUnit, hourly, displayTexts[i], maxColOneChars, minColChars, maxColChars)))
   }
 
-  private renderForecastItem (forecast: MergedWeatherForecast, minTemp: number, maxTemp: number, currentTemp: number | null, temperatureUnit: TemperatureUnit, hourly: boolean, displayText: string, maxColOneChars: number, maxTempChars: number): TemplateResult {
-    const weatherState = forecast.precipitation > 10 ? 'raindrops' : forecast.precipitation > 0 ? 'raindrop' : forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition
+  private renderForecastItem (forecast: MergedWeatherForecast, minTemp: number, maxTemp: number, currentTemp: number | null, temperatureUnit: TemperatureUnit, hourly: boolean, displayText: string, maxColOneChars: number, minColChars: number, maxColChars: number): TemplateResult {
+    const isToday = DateTime.now().day === forecast.datetime.day
+    const weatherState = this.getForecastWeatherState(forecast, isToday && !hourly, forecast.condition)
     const daytime: 'day' | 'night' | undefined = hourly ? (this.isHourDaytime(forecast.datetime.hour) ? 'day' : 'night') : 'day'
     const weatherIcon = this.toIcon(weatherState, 'fill', daytime, 'static')
     const tempUnit = this.getWeather().attributes.temperature_unit
-    const isNow = hourly ? DateTime.now().hour === forecast.datetime.hour : DateTime.now().day === forecast.datetime.day
+    const isNow = hourly ? DateTime.now().hasSame(forecast.datetime, 'hour') : DateTime.now().day === forecast.datetime.day
     const showDot = isNow && !hourly
     const minTempDayRaw = Math.round(isNow && currentTemp !== null ? Math.min(currentTemp, forecast.templow) : forecast.templow)
     const maxTempDayRaw = Math.round(isNow && currentTemp !== null ? Math.max(currentTemp, forecast.temperature) : forecast.temperature)
@@ -419,7 +759,7 @@ export class ClockWeatherCard extends LitElement {
     const clampedCurrentTemp = currentTemp !== null ? Math.max(minTemp, Math.min(maxTemp, Math.round(currentTemp))) : null
 
     return html`
-      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size: ${(maxTempChars * 0.5)}rem;">
+      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size-min: ${(minColChars * 0.5)}rem; --temp-col-size-max: ${(maxColChars * 0.5)}rem;">
         ${this.renderText(displayText)}
         ${this.renderIcon(weatherIcon)}
         ${this.renderText(this.toConfiguredTempWithUnit(tempUnit, hourly ? maxTempDay : minTempDay), 'right')}
@@ -446,7 +786,8 @@ export class ClockWeatherCard extends LitElement {
   }
 
   private renderForecastTemperatureBar (minTemp: number, maxTemp: number, minTempDay: number, maxTempDay: number, isNow: boolean, currentTemp: number | null, temperatureUnit: TemperatureUnit): TemplateResult {
-    const { startPercent, endPercent } = this.calculateBarRangePercents(minTemp, maxTemp, minTempDay, maxTempDay)
+    const barRange = this.calculateBarRangePercents(minTemp, maxTemp, minTempDay, maxTempDay)
+    const { startPercent, endPercent } = this.enforceMinBarWidth(barRange.startPercent, barRange.endPercent)
     const moveRight = maxTemp === minTemp ? 0 : (minTempDay - minTemp) / (maxTemp - minTemp)
     return html`
       <forecast-temperature-bar>
@@ -479,27 +820,24 @@ export class ClockWeatherCard extends LitElement {
     `
   }
 
-  private getCurrentRainValue (): number | null {
-    let val: number | undefined
-    if (this.config.rain_sensor) {
-      const sensor = this.hass.states[this.config.rain_sensor]
-      val = sensor?.state ? parseFloat(sensor.state) : undefined
+  private getCurrentValue (forecastSuffix?: string): number | null {
+    if (this.config.today_value_sensor) {
+      const val = this.getNumericState(this.config.today_value_sensor)
+      if (val !== null) return val
     }
-    if (val === undefined && this.config.rain_sensor_prefix) {
-      const sensor = this.hass.states[`${this.config.rain_sensor_prefix}amount_max_0`]
-      val = sensor?.state ? parseFloat(sensor.state) : undefined
+    if (forecastSuffix && this.config.forecast_sensor_prefix) {
+      return this.getNumericState(`${this.config.forecast_sensor_prefix}${forecastSuffix}`)
     }
-    if (val !== undefined && !isNaN(val)) return val
     return null
   }
 
   private renderRainForecast (): TemplateResult[] {
-    const prefix = this.config.rain_sensor_prefix
+    const prefix = this.config.forecast_sensor_prefix
     if (!prefix) return []
 
     const maxRowsCount = this.config.forecast_rows
 
-    const currentRain = this.config.rain_sensor ? this.getNumericState(this.config.rain_sensor) : null
+    const currentRain = this.config.today_value_sensor ? this.getNumericState(this.config.today_value_sensor) : null
 
     const rainDays: Array<{ min: number, max: number, chance: number }> = []
     for (let i = 0; i < maxRowsCount; i++) {
@@ -510,17 +848,10 @@ export class ClockWeatherCard extends LitElement {
     }
 
     const globalMax = Math.max(...rainDays.map(d => d.max), currentRain ?? 0, 1)
-
-    const forecasts = this.mergeForecasts(maxRowsCount, false)
-    const displayTexts = forecasts
-      .map(f => f.datetime)
-      .map(d => this.localize(`day.${d.weekday}`))
-    const maxColOneChars = this.getMaxColOneChars()
-    const { minTemp, maxTemp } = this.getGlobalTempRange()
-    const maxValueChars = this.getMaxTempChars(minTemp, maxTemp)
+    const { forecasts, displayTexts, maxColOneChars, minColChars, maxColChars } = this.getForecastLayout(maxRowsCount)
 
     return rainDays.map((day, i) => safeRender(() =>
-      this.renderRainForecastItem(day, globalMax, forecasts[i], displayTexts[i] ?? '', maxColOneChars, maxValueChars, i === 0, currentRain)
+      this.renderRainForecastItem(day, globalMax, forecasts[i], displayTexts[i] ?? '', maxColOneChars, minColChars, maxColChars, i === 0, currentRain)
     ))
   }
 
@@ -530,66 +861,47 @@ export class ClockWeatherCard extends LitElement {
     forecast: MergedWeatherForecast | undefined,
     displayText: string,
     maxColOneChars: number,
-    maxRainChars: number,
+    minColChars: number,
+    maxColChars: number,
     isToday: boolean,
     currentRain: number | null
   ): TemplateResult {
-    const weatherState = forecast ? (forecast.precipitation > 10 ? 'raindrops' : forecast.precipitation > 0 ? 'raindrop' : forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition) : 'rainy'
-    const weatherIcon = this.toIcon(weatherState, 'fill', 'day', 'static')
+    const weatherIcon = this.toIcon(this.getForecastWeatherState(forecast, isToday, 'rainy'), 'fill', 'day', 'static')
     const chanceText = `${Math.round(day.chance)}%`
 
     return html`
-      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size: ${(maxRainChars * 0.5)}rem;">
+      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size-min: ${(minColChars * 0.5)}rem; --temp-col-size-max: ${(maxColChars * 0.5)}rem;">
         ${this.renderText(displayText)}
         ${this.renderIcon(weatherIcon)}
         ${this.renderText(chanceText, 'right')}
-        ${this.renderRainBar(globalMax, day.min, day.max, isToday, currentRain, day.chance)}
+        ${this.renderRainBar(globalMax, day, isToday, currentRain)}
         <forecast-text>${day.max} <span class="value-unit">mm</span></forecast-text>
       </clock-weather-card-forecast-row>
     `
   }
 
-  private renderRainBar (globalMax: number, dayMin: number, dayMax: number, isToday: boolean, currentRain: number | null, chance: number): TemplateResult {
-    const showBar = chance > 0 && dayMax > 0
-    const { startPercent, endPercent } = this.calculateBarRangePercents(0, globalMax, dayMin, dayMax)
-    const moveRight = globalMax === 0 ? 0 : dayMin / globalMax
-    const gradient = this.createRainGradientString(dayMin, dayMax, globalMax)
-    const clampedRain = currentRain !== null ? Math.max(dayMin, Math.min(dayMax, currentRain)) : null
-    const showDot = isToday && clampedRain !== null
-
-    return html`
-      <forecast-temperature-bar>
-        <forecast-temperature-bar-background> </forecast-temperature-bar-background>
-        ${showBar
-          ? html`<forecast-temperature-bar-range
-              style="--move-right: ${moveRight.toFixed(2)}; --start-percent: ${startPercent.toFixed(2)}%; --end-percent: ${endPercent.toFixed(2)}%; --gradient: ${gradient};"
-            >
-              ${showDot ? this.renderForecastCurrentTemp(dayMin, dayMax, clampedRain) : ''}
-            </forecast-temperature-bar-range>`
-          : html`${showDot ? this.renderForecastCurrentTemp(0, globalMax, clampedRain) : ''}`}
-      </forecast-temperature-bar>
-    `
+  private renderRainBar (globalMax: number, day: { min: number, max: number, chance: number }, isToday: boolean, currentRain: number | null): TemplateResult {
+    const showBar = day.chance > 0 && day.max > 0
+    let { startPercent, endPercent } = this.calculateBarRangePercents(0, globalMax, day.min, day.max)
+    if (showBar) ({ startPercent, endPercent } = this.enforceMinBarWidth(startPercent, endPercent))
+    const moveRight = globalMax === 0 ? 0 : day.min / globalMax
+    const gradient = this.createTwoColorGradientString(day.min, day.max, globalMax, new Rgb(174, 210, 230), new Rgb(40, 120, 180))
+    return this.renderBar(showBar, startPercent, endPercent, moveRight, gradient, isToday ? currentRain : null, 0, globalMax)
   }
 
-  private createRainGradientString (dayMin: number, dayMax: number, globalMax: number): string {
-    const lightBlue = new Rgb(174, 210, 230)
-    const darkBlue = new Rgb(40, 120, 180)
-
+  private createTwoColorGradientString (dayMin: number, dayMax: number, globalMax: number, lightColor: Rgb, darkColor: Rgb): string {
     function interpolate (ratio: number): Rgb {
       return new Rgb(
-        Math.round(lightBlue.r + ratio * (darkBlue.r - lightBlue.r)),
-        Math.round(lightBlue.g + ratio * (darkBlue.g - lightBlue.g)),
-        Math.round(lightBlue.b + ratio * (darkBlue.b - lightBlue.b))
+        Math.round(lightColor.r + ratio * (darkColor.r - lightColor.r)),
+        Math.round(lightColor.g + ratio * (darkColor.g - lightColor.g)),
+        Math.round(lightColor.b + ratio * (darkColor.b - lightColor.b))
       )
     }
 
-    if (dayMin === dayMax) {
-      const color = interpolate(globalMax > 0 ? dayMin / globalMax : 0)
-      return `${color.toRgbString()} 0%, ${color.toRgbString()} 100%`
-    }
-
-    const colorMin = interpolate(globalMax > 0 ? dayMin / globalMax : 0)
-    const colorMax = interpolate(globalMax > 0 ? dayMax / globalMax : 0)
+    const ratioMin = globalMax > 0 ? dayMin / globalMax : 0
+    const ratioMax = globalMax > 0 ? dayMax / globalMax : 0
+    const colorMin = interpolate(ratioMin)
+    const colorMax = dayMin === dayMax ? colorMin : interpolate(ratioMax)
     return `${colorMin.toRgbString()} 0%, ${colorMax.toRgbString()} 100%`
   }
 
@@ -602,16 +914,37 @@ export class ClockWeatherCard extends LitElement {
 
   private getTodayDescription (fallback: string): TemplateResult {
     let text = fallback
-    const descriptionSensor = this.config.today_description_sensor ?? (this.config.forecast_type === 'uv_daily' && this.config.uv_sensor_prefix ? `${this.config.uv_sensor_prefix}forecast_0` : undefined)
+    const descriptionSensor = this.config.today_description_sensor ?? (this.config.forecast_type === 'uv_daily' && this.config.forecast_sensor_prefix ? `${this.config.forecast_sensor_prefix}forecast_0` : undefined)
     if (descriptionSensor) {
       text = this.getStringState(descriptionSensor) ?? (descriptionSensor.endsWith('_0') ? this.getStringState(descriptionSensor.replace(/_0$/, '_1')) : null) ?? fallback
     }
     text = text.trim().replace(/^\.+|\.+$/g, '').trim()
+    if (this.config.forecast_type === 'uv_daily') {
+      text = text.replace(/([Rr]ecommended)\s*/i, '$1\n')
+    }
     if (text.length > 75) {
       text = text.split(',')[0].trim().replace(/^\.+|\.+$/g, '').trim()
     }
     if (text.length > 75) {
       text = text.substring(0, 72).trim().replace(/^\.+|\.+$/g, '').trim().replace(/[^a-zA-Z0-9]+$/, '') + ' ...'
+    }
+    if (text.length < 30 && !text.includes('\n')) {
+      if (this.config.forecast_type === 'temp_daily') {
+        const iconDescriptor = this.config.icon_descriptor_sensor ? this.getStringState(this.config.icon_descriptor_sensor) : null
+        const descriptorKey = iconDescriptor ? iconDescriptor.trim().toLowerCase().replace(/\s+/g, '_') : text.split(',')[0].trim().toLowerCase().replace(/\s+/g, '_')
+        const category = ICON_DESCRIPTOR_TO_CATEGORY[descriptorKey]
+        const descriptorDescriptions = category ? ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS[category] : null
+        const descriptorDescription = descriptorDescriptions ? descriptorDescriptions[this.getDescriptionIndex(descriptorDescriptions.length)] : null
+        text = text.replace(/\.+$/, '')
+        text += `\n${descriptorDescription ?? 'This weather is inscrutable, so do as Marsupalami would!'}`
+      } else {
+        text = text.replace(/\.+$/, '')
+        if (this.config.forecast_type === 'rain_daily' && text.toLowerCase().includes('rain')) {
+          text += "\nRain, rain, don't go away, we need you!"
+        } else {
+          text += '\nLooks good, have fun!'
+        }
+      }
     }
     const parts = text.split('\n')
     if (parts.length > 1) {
@@ -620,69 +953,65 @@ export class ClockWeatherCard extends LitElement {
     return html`${text}`
   }
 
+  private getDescriptionIndex (count: number): number {
+    const now = new Date()
+    const daySeed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate()
+    const sessionSalt = Math.floor(performance.timeOrigin)
+    return Math.abs(daySeed + sessionSalt) % count
+  }
+
   private getStringState (entityId: string): string | null {
     const sensor = this.hass.states[entityId]
     if (sensor?.state && sensor.state !== 'unknown' && sensor.state !== 'unavailable') return sensor.state
     return null
   }
 
+  private getNumericWithFallback (prefix: string, suffix: string, index: number): number | null {
+    const val = this.getNumericState(`${prefix}${suffix}${index}`)
+    if (val !== null) return val
+    return index === 0 ? this.getNumericState(`${prefix}${suffix}1`) : null
+  }
+
+  private getStringWithFallback (prefix: string, suffix: string, index: number): string | null {
+    const val = this.getStringState(`${prefix}${suffix}${index}`)
+    if (val !== null) return val
+    return index === 0 ? this.getStringState(`${prefix}${suffix}1`) : null
+  }
+
   private renderTodayUv (): TemplateResult {
     const weather = this.getWeather()
     const state = weather.state
     const iconType = this.config.weather_icon_type
-    const iconState = this.getWeatherStateWithRainOverride(state)
-    const icon = this.toIcon(iconState, iconType, undefined, this.getIconAnimationKind())
-    const prefix = this.config.uv_sensor_prefix ?? ''
-    const category = this.getStringState(`${prefix}category_0`) ?? this.getStringState(`${prefix}category_1`) ?? 'n/a'
-    const weatherString = this.localize(`weather.${state}`)
+    const prefix = this.config.forecast_sensor_prefix ?? ''
+    const category = this.getStringWithFallback(prefix, 'category_', 0) ?? 'n/a'
+    const kind = this.getIconAnimationKind()
+    const uvIconMap = kind === 'animated' ? uvIcons.animated : uvIcons.static
+    const icon: string = uvIconMap[iconType]?.[category.toLowerCase()] ?? this.toIcon(this.getIconState(state), iconType, undefined, kind)
 
-    return html`
-      <clock-weather-card-today-left>
-        <img class="grow-img" src=${icon} />
-      </clock-weather-card-today-left>
-      <clock-weather-card-today-right>
-        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: 0.5rem; box-sizing: border-box;">
-          <clock-weather-card-today-right-wrap-top>
-            ${this.getTodayDescription(weatherString)}
-          </clock-weather-card-today-right-wrap-top>
-          <clock-weather-card-today-right-wrap-center style="justify-content: end;">
-            ${category}
-          </clock-weather-card-today-right-wrap-center>
-          <clock-weather-card-today-right-wrap-bottom>
-            ${this.config.hide_date ? '' : this.date()}
-          </clock-weather-card-today-right-wrap-bottom>
-        </clock-weather-card-today-right-wrap>
-      </clock-weather-card-today-right>`
+    return this.renderTodayLayout(icon, this.getTodayDescription(this.localize(`weather.${state}`)), category)
   }
 
   private renderUvForecast (): TemplateResult[] {
-    const prefix = this.config.uv_sensor_prefix
+    const prefix = this.config.forecast_sensor_prefix
     if (!prefix) return []
 
     const maxRowsCount = this.config.forecast_rows
 
     const uvDays: Array<{ maxIndex: number, startHour: number, endHour: number, category: string }> = []
     for (let i = 0; i < maxRowsCount; i++) {
-      const fallback = i === 0 ? 1 : i
-      const maxIndex = this.getNumericState(`${prefix}max_index_${i}`) ?? (i === 0 ? this.getNumericState(`${prefix}max_index_${fallback}`) ?? 0 : 0)
-      const startTimeStr = this.getStringState(`${prefix}start_time_${i}`) ?? (i === 0 ? this.getStringState(`${prefix}start_time_${fallback}`) : null)
-      const endTimeStr = this.getStringState(`${prefix}end_time_${i}`) ?? (i === 0 ? this.getStringState(`${prefix}end_time_${fallback}`) : null)
-      const category = this.getStringState(`${prefix}category_${i}`) ?? (i === 0 ? this.getStringState(`${prefix}category_${fallback}`) ?? '' : '')
+      const maxIndex = this.getNumericWithFallback(prefix, 'max_index_', i) ?? 0
+      const startTimeStr = this.getStringWithFallback(prefix, 'start_time_', i)
+      const endTimeStr = this.getStringWithFallback(prefix, 'end_time_', i)
+      const category = this.getStringWithFallback(prefix, 'category_', i) ?? ''
       const startHour = startTimeStr ? DateTime.fromISO(startTimeStr).toLocal().hour : 6
       const endHour = endTimeStr ? Math.ceil(DateTime.fromISO(endTimeStr).toLocal().hour + DateTime.fromISO(endTimeStr).toLocal().minute / 60) : 18
       uvDays.push({ maxIndex, startHour: Math.max(6, startHour), endHour: Math.min(18, endHour), category })
     }
 
-    const forecasts = this.mergeForecasts(maxRowsCount, false)
-    const displayTexts = forecasts
-      .map(f => f.datetime)
-      .map(d => this.localize(`day.${d.weekday}`))
-    const maxColOneChars = this.getMaxColOneChars()
-    const { minTemp, maxTemp } = this.getGlobalTempRange()
-    const maxValueChars = this.getMaxTempChars(minTemp, maxTemp)
+    const { forecasts, displayTexts, maxColOneChars, minColChars, maxColChars } = this.getForecastLayout(maxRowsCount)
 
     return uvDays.map((day, i) => safeRender(() =>
-      this.renderUvForecastItem(day, forecasts[i], displayTexts[i] ?? '', maxColOneChars, maxValueChars)
+      this.renderUvForecastItem(day, forecasts[i], displayTexts[i] ?? '', maxColOneChars, minColChars, maxColChars, i === 0)
     ))
   }
 
@@ -691,97 +1020,71 @@ export class ClockWeatherCard extends LitElement {
     forecast: MergedWeatherForecast | undefined,
     displayText: string,
     maxColOneChars: number,
-    maxValueChars: number
+    minColChars: number,
+    maxColChars: number,
+    isToday: boolean
   ): TemplateResult {
-    const weatherState = forecast ? (forecast.precipitation > 10 ? 'raindrops' : forecast.precipitation > 0 ? 'raindrop' : forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition) : 'sunny'
-    const weatherIcon = this.toIcon(weatherState, 'fill', 'day', 'static')
+    const weatherIcon = this.toIcon(this.getForecastWeatherState(forecast, isToday, 'sunny'), 'fill', 'day', 'static')
     const timeRange = `${day.startHour}–${day.endHour}`
 
     return html`
-      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size: ${(maxValueChars * 0.5)}rem;">
+      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size-min: ${(minColChars * 0.5)}rem; --temp-col-size-max: ${(maxColChars * 0.5)}rem;">
         ${this.renderText(displayText)}
         ${this.renderIcon(weatherIcon)}
         ${this.renderText(timeRange, 'right')}
-        ${this.renderUvBar(day.startHour, day.endHour, day.maxIndex)}
+        ${this.renderUvBar(day.startHour, day.endHour, day.maxIndex, isToday)}
         <forecast-text>${day.maxIndex} UV</forecast-text>
       </clock-weather-card-forecast-row>
     `
   }
 
-  private renderUvBar (startHour: number, endHour: number, maxIndex: number): TemplateResult {
+  private renderUvBar (startHour: number, endHour: number, maxIndex: number, isToday: boolean): TemplateResult {
     const showBar = maxIndex > 0 && endHour > startHour
-    const startPercent = ((startHour - 6) / 12) * 100
-    const endPercent = ((endHour - 6) / 12) * 100
-    const moveRight = (startHour - 6) / 12
-    const gradient = this.createUvGradientString(maxIndex)
-
-    return html`
-      <forecast-temperature-bar>
-        <forecast-temperature-bar-background> </forecast-temperature-bar-background>
-        ${showBar
-          ? html`<forecast-temperature-bar-range
-              style="--move-right: ${moveRight.toFixed(2)}; --start-percent: ${startPercent.toFixed(2)}%; --end-percent: ${endPercent.toFixed(2)}%; --gradient: ${gradient};"
-            >
-            </forecast-temperature-bar-range>`
-          : ''}
-      </forecast-temperature-bar>
-    `
+    const dotValue = isToday ? DateTime.now().hour + DateTime.now().minute / 60 : null
+    const uvLevel = maxIndex <= 2 ? 1 : maxIndex <= 5 ? 2 : maxIndex <= 7 ? 3 : maxIndex <= 10 ? 4 : 5
+    return this.renderBar(showBar, (startHour / 24) * 100, (endHour / 24) * 100, startHour / 24, this.solidGradient(this.getSeverityColor(uvLevel)), dotValue, 0, 24)
   }
 
-  private createUvGradientString (maxIndex: number): string {
-    const color = this.getUvColor(maxIndex)
+  private getSeverityColor (level: number): Rgb {
+    if (level <= 1) return new Rgb(255, 255, 255)
+    if (level <= 2) return new Rgb(81, 207, 102)
+    if (level <= 3) return new Rgb(255, 224, 102)
+    if (level <= 4) return new Rgb(255, 192, 120)
+    return new Rgb(248, 113, 113)
+  }
+
+  private solidGradient (color: Rgb): string {
     return `${color.toRgbString()} 0%, ${color.toRgbString()} 100%`
   }
 
-  private getUvColor (index: number): Rgb {
-    if (index <= 2) return new Rgb(255, 255, 255)
-    if (index <= 5) return new Rgb(78, 166, 56)
-    if (index <= 7) return new Rgb(247, 186, 31)
-    if (index <= 10) return new Rgb(232, 110, 28)
-    return new Rgb(209, 47, 41)
-  }
-
   private renderTodayBushfire (): TemplateResult {
-    const weather = this.getWeather()
-    const state = weather.state
     const iconType = this.config.weather_icon_type
-    const iconState = this.getWeatherStateWithRainOverride(state)
-    const icon = this.toIcon(iconState, iconType, undefined, this.getIconAnimationKind())
-    const prefix = this.config.bushfire_sensor_prefix ?? ''
+    const prefix = this.config.forecast_sensor_prefix ?? ''
     const rating = this.getStringState(`${prefix}0`) ?? 'n/a'
-    const description = this.getBushfireDescription(rating)
+    const kind = this.getIconAnimationKind()
+    const bushfireIconMap = kind === 'animated' ? bushfireIcons.animated : bushfireIcons.static
+    const icon: string = bushfireIconMap[iconType]?.[rating.toLowerCase()] ?? this.toIcon(this.getIconState(this.getWeather().state), iconType, undefined, kind)
 
-    return html`
-      <clock-weather-card-today-left>
-        <img class="grow-img" src=${icon} />
-      </clock-weather-card-today-left>
-      <clock-weather-card-today-right>
-        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: 0.5rem; box-sizing: border-box;">
-          <clock-weather-card-today-right-wrap-top>
-            Bush fire risk is ${rating} today,<br>${description}
-          </clock-weather-card-today-right-wrap-top>
-          <clock-weather-card-today-right-wrap-center style="justify-content: end;">
-            ${rating}
-          </clock-weather-card-today-right-wrap-center>
-          <clock-weather-card-today-right-wrap-bottom>
-            ${this.config.hide_date ? '' : this.date()}
-          </clock-weather-card-today-right-wrap-bottom>
-        </clock-weather-card-today-right-wrap>
-      </clock-weather-card-today-right>`
+    return this.renderTodayLayout(
+      icon,
+      html`Bush fire risk is ${rating.toLowerCase()} today<br>${this.getBushfireInfo(rating).description}`,
+      rating
+    )
   }
 
-  private getBushfireDescription (rating: string): string {
-    const r = rating.toLowerCase()
-    if (r === 'no rating') return 'nothing to worry about!'
-    if (r === 'moderate') return 'plan and prepare'
-    if (r === 'high') return 'be ready to act'
-    if (r === 'extreme') return 'high vigilance, be ready to act'
-    if (r === 'catastrophic') return 'high vigilance, consider leaving home'
-    return ''
+  private getBushfireInfo (rating: string): { description: string, abbreviation: string, severityLevel: number } {
+    const map: Record<string, { description: string, abbreviation: string, severityLevel: number }> = {
+      'no rating': { description: 'Nothing to worry about!', abbreviation: 'NONE', severityLevel: 1 },
+      moderate: { description: 'Plan and prepare', abbreviation: 'MOD', severityLevel: 2 },
+      high: { description: 'Be ready to act', abbreviation: 'HIGH', severityLevel: 3 },
+      extreme: { description: 'High vigilance, be ready to act', abbreviation: 'EXT', severityLevel: 4 },
+      catastrophic: { description: 'High vigilance, consider leaving home', abbreviation: 'CAT', severityLevel: 5 }
+    }
+    return map[rating.toLowerCase()] ?? { description: '', abbreviation: '', severityLevel: 1 }
   }
 
   private renderBushfireForecast (): TemplateResult[] {
-    const prefix = this.config.bushfire_sensor_prefix
+    const prefix = this.config.forecast_sensor_prefix
     if (!prefix) return []
 
     const maxRowsCount = this.config.forecast_rows
@@ -792,16 +1095,10 @@ export class ClockWeatherCard extends LitElement {
       bushfireDays.push({ rating })
     }
 
-    const forecasts = this.mergeForecasts(maxRowsCount, false)
-    const displayTexts = forecasts
-      .map(f => f.datetime)
-      .map(d => this.localize(`day.${d.weekday}`))
-    const maxColOneChars = this.getMaxColOneChars()
-    const { minTemp, maxTemp } = this.getGlobalTempRange()
-    const maxValueChars = this.getMaxTempChars(minTemp, maxTemp)
+    const { forecasts, displayTexts, maxColOneChars, minColChars, maxColChars } = this.getForecastLayout(maxRowsCount)
 
     return bushfireDays.map((day, i) => safeRender(() =>
-      this.renderBushfireForecastItem(day, forecasts[i], displayTexts[i] ?? '', maxColOneChars, maxValueChars)
+      this.renderBushfireForecastItem(day, forecasts[i], displayTexts[i] ?? '', maxColOneChars, minColChars, maxColChars, i === 0)
     ))
   }
 
@@ -810,134 +1107,72 @@ export class ClockWeatherCard extends LitElement {
     forecast: MergedWeatherForecast | undefined,
     displayText: string,
     maxColOneChars: number,
-    maxValueChars: number
+    minColChars: number,
+    maxColChars: number,
+    isToday: boolean
   ): TemplateResult {
-    const weatherState = forecast ? (forecast.precipitation > 10 ? 'raindrops' : forecast.precipitation > 0 ? 'raindrop' : forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition) : 'sunny'
-    const weatherIcon = this.toIcon(weatherState, 'fill', 'day', 'static')
+    const weatherIcon = this.toIcon(this.getForecastWeatherState(forecast, isToday, 'sunny'), 'fill', 'day', 'static')
 
     return html`
-      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size: ${(maxValueChars * 0.5)}rem;">
+      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size-min: ${(minColChars * 0.5)}rem; --temp-col-size-max: ${(maxColChars * 0.5)}rem;">
         ${this.renderText(displayText)}
         ${this.renderIcon(weatherIcon)}
-        ${this.renderText('0–24', 'right')}
-        ${this.renderBushfireBar(day.rating)}
-        <forecast-text>${this.getBushfireAbbreviation(day.rating)}</forecast-text>
+        ${this.renderText('∀ hrs', 'right')}
+        ${this.renderBushfireBar(day.rating, isToday)}
+        <forecast-text>${this.getBushfireInfo(day.rating).abbreviation}</forecast-text>
       </clock-weather-card-forecast-row>
     `
   }
 
-  private renderBushfireBar (rating: string): TemplateResult {
-    const color = this.getBushfireColor(rating)
+  private renderBushfireBar (rating: string, isToday: boolean): TemplateResult {
+    const info = this.getBushfireInfo(rating)
+    const color = this.getSeverityColor(info.severityLevel)
     const showBar = rating.toLowerCase() !== 'no rating' && rating !== ''
-    const gradient = `${color.toRgbString()} 0%, ${color.toRgbString()} 100%`
-
-    return html`
-      <forecast-temperature-bar>
-        <forecast-temperature-bar-background> </forecast-temperature-bar-background>
-        ${showBar
-          ? html`<forecast-temperature-bar-range
-              style="--move-right: 0.00; --start-percent: 0.00%; --end-percent: 100.00%; --gradient: ${gradient};"
-            >
-            </forecast-temperature-bar-range>`
-          : ''}
-      </forecast-temperature-bar>
-    `
-  }
-
-  private getBushfireColor (rating: string): Rgb {
-    const r = rating.toLowerCase()
-    if (r === 'no rating') return new Rgb(255, 255, 255)
-    if (r === 'moderate') return new Rgb(78, 166, 56)
-    if (r === 'high') return new Rgb(247, 186, 31)
-    if (r === 'extreme') return new Rgb(232, 110, 28)
-    if (r === 'catastrophic') return new Rgb(209, 47, 41)
-    return new Rgb(255, 255, 255)
-  }
-
-  private getBushfireAbbreviation (rating: string): string {
-    const r = rating.toLowerCase()
-    if (r === 'no rating') return 'NONE'
-    if (r === 'moderate') return 'MOD'
-    if (r === 'high') return 'HIGH'
-    if (r === 'extreme') return 'EXT'
-    if (r === 'catastrophic') return 'CAT'
-    return ''
+    const dotValue = isToday ? DateTime.now().hour + DateTime.now().minute / 60 : null
+    return this.renderBar(showBar, 0, 100, 0, this.solidGradient(color), dotValue, 0, 24)
   }
 
   private renderTodayWind (): TemplateResult {
     const weather = this.getWeather()
     const state = weather.state
     const iconType = this.config.weather_icon_type
-    const iconState = this.getWeatherStateWithRainOverride(state)
-    const icon = this.toIcon(iconState, iconType, undefined, this.getIconAnimationKind())
-    const prefix = this.config.wind_sensor_prefix ?? ''
-    const directionText = (this.getStringState(`${prefix}dominant_direction_text_0`) ?? this.getStringState(`${prefix}dominant_direction_text_1`) ?? '').toLowerCase()
-    const speedMax = this.getNumericState(`${prefix}speed_max_0`) ?? this.getNumericState(`${prefix}speed_max_1`) ?? 0
-    const speedMin = this.getNumericState(`${prefix}speed_min_0`) ?? this.getNumericState(`${prefix}speed_min_1`) ?? 0
-    const windDescription = `Winds ${directionText} today, ranging from ${Math.round(speedMax)}km/h to ${Math.round(speedMin)}km/h`
-    const currentWind = this.getCurrentWindValue()
+    const prefix = this.config.forecast_sensor_prefix ?? ''
+    const directionText = (this.getStringWithFallback(prefix, 'dominant_direction_text_', 0) ?? '').toLowerCase()
+    const speedMax = this.getNumericWithFallback(prefix, 'speed_max_', 0) ?? 0
+    const windIconState = speedMax >= 10 ? 'windy' : this.getIconState(state)
+    const icon = this.toIcon(windIconState, iconType, undefined, this.getIconAnimationKind())
+    const speedMin = this.getNumericWithFallback(prefix, 'speed_min_', 0) ?? 0
+    const windDescription = `Winds ${directionText} today\nfrom ${Math.round(speedMin)} km/h to ${Math.round(speedMax)} km/h`
+    const currentWind = this.getCurrentValue('speed_max_0')
 
-    return html`
-      <clock-weather-card-today-left>
-        <img class="grow-img" src=${icon} />
-      </clock-weather-card-today-left>
-      <clock-weather-card-today-right>
-        <clock-weather-card-today-right-wrap style="width: 100%; padding-right: 0.5rem; box-sizing: border-box;">
-          <clock-weather-card-today-right-wrap-top>
-            ${this.getTodayDescription(windDescription)}
-          </clock-weather-card-today-right-wrap-top>
-          <clock-weather-card-today-right-wrap-center style="justify-content: end;">
-            ${currentWind !== null
-              ? html`${Math.round(currentWind)}km/h`
-              : 'Nil'}
-          </clock-weather-card-today-right-wrap-center>
-          <clock-weather-card-today-right-wrap-bottom>
-            ${this.config.hide_date ? '' : this.date()}
-          </clock-weather-card-today-right-wrap-bottom>
-        </clock-weather-card-today-right-wrap>
-      </clock-weather-card-today-right>`
-  }
+    const centerContent = currentWind !== null
+      ? html`<span class="today-value-wrap">${Math.round(currentWind)} <span class="value-unit-large">km/h</span></span>`
+      : 'Nil'
 
-  private getCurrentWindValue (): number | null {
-    if (this.config.wind_sensor) {
-      const val = this.getNumericState(this.config.wind_sensor)
-      if (val !== null) return val
-    }
-    if (this.config.wind_sensor_prefix) {
-      const val = this.getNumericState(`${this.config.wind_sensor_prefix}speed_max_0`)
-      if (val !== null) return val
-    }
-    return null
+    return this.renderTodayLayout(icon, this.getTodayDescription(windDescription), centerContent)
   }
 
   private renderWindForecast (): TemplateResult[] {
-    const prefix = this.config.wind_sensor_prefix
+    const prefix = this.config.forecast_sensor_prefix
     if (!prefix) return []
 
     const maxRowsCount = this.config.forecast_rows
 
-    const currentWind = this.config.wind_sensor ? this.getNumericState(this.config.wind_sensor) : null
+    const currentWind = this.config.today_value_sensor ? this.getNumericState(this.config.today_value_sensor) : null
 
     const windDays: Array<{ min: number, max: number, direction: string }> = []
     for (let i = 0; i < maxRowsCount; i++) {
-      const minVal = this.getNumericState(`${prefix}speed_min_${i}`)
-      const maxVal = this.getNumericState(`${prefix}speed_max_${i}`)
-      const direction = this.getStringState(`${prefix}dominant_direction_abbreviation_${i}`) ?? ''
+      const minVal = this.getNumericWithFallback(prefix, 'speed_min_', i)
+      const maxVal = this.getNumericWithFallback(prefix, 'speed_max_', i)
+      const direction = this.getStringWithFallback(prefix, 'dominant_direction_abbreviation_', i) ?? ''
       windDays.push({ min: minVal ?? 0, max: maxVal ?? 0, direction })
     }
 
     const globalMax = Math.max(...windDays.map(d => d.max), currentWind ?? 0, 1)
-
-    const forecasts = this.mergeForecasts(maxRowsCount, false)
-    const displayTexts = forecasts
-      .map(f => f.datetime)
-      .map(d => this.localize(`day.${d.weekday}`))
-    const maxColOneChars = this.getMaxColOneChars()
-    const { minTemp, maxTemp } = this.getGlobalTempRange()
-    const maxValueChars = this.getMaxTempChars(minTemp, maxTemp)
+    const { forecasts, displayTexts, maxColOneChars, minColChars, maxColChars } = this.getForecastLayout(maxRowsCount)
 
     return windDays.map((day, i) => safeRender(() =>
-      this.renderWindForecastItem(day, globalMax, forecasts[i], displayTexts[i] ?? '', maxColOneChars, maxValueChars, i === 0, currentWind)
+      this.renderWindForecastItem(day, globalMax, forecasts[i], displayTexts[i] ?? '', maxColOneChars, minColChars, maxColChars, i === 0, currentWind)
     ))
   }
 
@@ -947,69 +1182,34 @@ export class ClockWeatherCard extends LitElement {
     forecast: MergedWeatherForecast | undefined,
     displayText: string,
     maxColOneChars: number,
-    maxWindChars: number,
+    minColChars: number,
+    maxColChars: number,
     isToday: boolean,
     currentWind: number | null
   ): TemplateResult {
-    const weatherState = forecast ? (forecast.precipitation > 10 ? 'raindrops' : forecast.precipitation > 0 ? 'raindrop' : forecast.condition === 'pouring' ? 'raindrops' : forecast.condition === 'rainy' ? 'raindrop' : forecast.condition) : 'sunny'
-    const weatherIcon = this.toIcon(weatherState, 'fill', 'day', 'static')
+    const weatherIcon = this.toIcon(this.getForecastWeatherState(forecast, isToday, 'sunny'), 'fill', 'day', 'static')
     return html`
-      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size: ${(maxWindChars * 0.5)}rem;">
+      <clock-weather-card-forecast-row style="--col-one-size: ${(maxColOneChars * 0.5)}rem; --temp-col-size-min: ${(minColChars * 0.5)}rem; --temp-col-size-max: ${(maxColChars * 0.5)}rem;">
         ${this.renderText(displayText)}
         ${this.renderIcon(weatherIcon)}
-        ${this.renderText(`${Math.round(day.min)} km/h`, 'right')}
+        <forecast-text style="text-align: right;">${Math.round(day.max)} <span class="value-unit">km/h</span></forecast-text>
         ${this.renderWindBar(globalMax, day.min, day.max, isToday, currentWind)}
-        <forecast-text>${Math.round(day.max)} <span class="value-unit">km/h</span></forecast-text>
+        ${this.renderText(day.direction)}
       </clock-weather-card-forecast-row>
     `
   }
 
   private renderWindBar (globalMax: number, dayMin: number, dayMax: number, isToday: boolean, currentWind: number | null): TemplateResult {
     const showBar = dayMax > 0
-    const { startPercent, endPercent } = this.calculateBarRangePercents(0, globalMax, dayMin, dayMax)
+    let { startPercent, endPercent } = this.calculateBarRangePercents(0, globalMax, dayMin, dayMax)
+    if (showBar) ({ startPercent, endPercent } = this.enforceMinBarWidth(startPercent, endPercent))
     const moveRight = globalMax === 0 ? 0 : dayMin / globalMax
-    const gradient = this.createWindGradientString(dayMin, dayMax, globalMax)
-    const clampedWind = currentWind !== null ? Math.max(dayMin, Math.min(dayMax, currentWind)) : null
-    const showDot = isToday && clampedWind !== null
-
-    return html`
-      <forecast-temperature-bar>
-        <forecast-temperature-bar-background> </forecast-temperature-bar-background>
-        ${showBar
-          ? html`<forecast-temperature-bar-range
-              style="--move-right: ${moveRight.toFixed(2)}; --start-percent: ${startPercent.toFixed(2)}%; --end-percent: ${endPercent.toFixed(2)}%; --gradient: ${gradient};"
-            >
-              ${showDot ? this.renderForecastCurrentTemp(dayMin, dayMax, clampedWind) : ''}
-            </forecast-temperature-bar-range>`
-          : html`${showDot ? this.renderForecastCurrentTemp(0, globalMax, clampedWind) : ''}`}
-      </forecast-temperature-bar>
-    `
-  }
-
-  private createWindGradientString (dayMin: number, dayMax: number, globalMax: number): string {
-    const lightGreen = new Rgb(174, 230, 190)
-    const darkGreen = new Rgb(40, 140, 60)
-
-    function interpolate (ratio: number): Rgb {
-      return new Rgb(
-        Math.round(lightGreen.r + ratio * (darkGreen.r - lightGreen.r)),
-        Math.round(lightGreen.g + ratio * (darkGreen.g - lightGreen.g)),
-        Math.round(lightGreen.b + ratio * (darkGreen.b - lightGreen.b))
-      )
-    }
-
-    if (dayMin === dayMax) {
-      const color = interpolate(globalMax > 0 ? dayMin / globalMax : 0)
-      return `${color.toRgbString()} 0%, ${color.toRgbString()} 100%`
-    }
-
-    const colorMin = interpolate(globalMax > 0 ? dayMin / globalMax : 0)
-    const colorMax = interpolate(globalMax > 0 ? dayMax / globalMax : 0)
-    return `${colorMin.toRgbString()} 0%, ${colorMax.toRgbString()} 100%`
+    const gradient = this.createTwoColorGradientString(dayMin, dayMax, globalMax, new Rgb(174, 230, 190), new Rgb(40, 140, 60))
+    return this.renderBar(showBar, startPercent, endPercent, moveRight, gradient, isToday ? currentWind : null, 0, globalMax)
   }
 
   private renderBushfireAlerts (): TemplateResult {
-    const entityId = this.config.bushfire_alerts_sensor
+    const entityId = this.config.forecast_secondary_sensor_prefix
     if (!entityId) return html``
     const sensor = this.hass.states[entityId]
     if (!sensor) return html``
@@ -1034,11 +1234,11 @@ export class ClockWeatherCard extends LitElement {
           <ha-icon icon="mdi:alert" style="--mdc-icon-size: 100%; width: 100%; height: 100%; color: red;"></ha-icon>
         </clock-weather-card-today-left>
         <clock-weather-card-today-right>
-          <clock-weather-card-today-right-wrap style="width: 100%; padding-right: 0.5rem; box-sizing: border-box;">
+          <clock-weather-card-today-right-wrap>
             <clock-weather-card-today-right-wrap-top>
               <a href="https://www.emergency.wa.gov.au/?view=both" style="color: var(--primary-text-color);" @click=${(e: Event) => { e.preventDefault(); e.stopPropagation(); window.open('https://www.emergency.wa.gov.au/?view=both', '_blank') }}>DFES Emergency Warnings</a><br>Bushfire within 30km of home
             </clock-weather-card-today-right-wrap-top>
-            <clock-weather-card-today-right-wrap-center style="justify-content: end;">
+            <clock-weather-card-today-right-wrap-center>
               Bushfire Alert
             </clock-weather-card-today-right-wrap-center>
           </clock-weather-card-today-right-wrap>
@@ -1169,8 +1369,7 @@ export class ClockWeatherCard extends LitElement {
     return {
       ...config,
       sun_entity: config.sun_entity ?? 'sun.sun',
-      temperature_sensor: config.temperature_sensor,
-      humidity_sensor: config.humidity_sensor,
+      today_value_sensor: config.today_value_sensor ?? undefined,
       weather_icon_type: config.weather_icon_type ?? 'line',
       forecast_rows: config.forecast_rows ?? 5,
       forecast_type: this.resolveForecastType(config),
@@ -1178,12 +1377,8 @@ export class ClockWeatherCard extends LitElement {
       animated_icon: config.animated_icon ?? true,
       time_format: config.time_format?.toString() as '12' | '24' | undefined,
       time_pattern: config.time_pattern ?? undefined,
-      show_humidity: config.show_humidity ?? false,
       hide_forecast_section: config.hide_forecast_section ?? false,
       hide_today_section: config.hide_today_section ?? false,
-      hide_clock: config.hide_clock ?? false,
-      hide_date: config.hide_date ?? false,
-      date_pattern: config.date_pattern ?? 'D',
       use_browser_time: config.use_browser_time ?? false,
       time_zone: config.time_zone ?? undefined,
       show_decimal: config.show_decimal ?? false,
@@ -1191,13 +1386,10 @@ export class ClockWeatherCard extends LitElement {
       aqi_sensor: config.aqi_sensor ?? undefined,
       temperature_sensor_min: config.temperature_sensor_min ?? undefined,
       temperature_sensor_max: config.temperature_sensor_max ?? undefined,
-      rain_sensor: config.rain_sensor ?? undefined,
-      rain_sensor_prefix: config.rain_sensor_prefix ? (config.rain_sensor_prefix.endsWith('_') ? config.rain_sensor_prefix : `${config.rain_sensor_prefix}_`) : undefined,
-      uv_sensor_prefix: config.uv_sensor_prefix ? (config.uv_sensor_prefix.endsWith('_') ? config.uv_sensor_prefix : `${config.uv_sensor_prefix}_`) : undefined,
-      bushfire_sensor_prefix: config.bushfire_sensor_prefix ? (config.bushfire_sensor_prefix.endsWith('_') ? config.bushfire_sensor_prefix : `${config.bushfire_sensor_prefix}_`) : undefined,
-      bushfire_alerts_sensor: config.bushfire_alerts_sensor ?? undefined,
-      wind_sensor: config.wind_sensor ?? undefined,
-      wind_sensor_prefix: config.wind_sensor_prefix ? (config.wind_sensor_prefix.endsWith('_') ? config.wind_sensor_prefix : `${config.wind_sensor_prefix}_`) : undefined
+      today_value_secondary_sensor: config.today_value_secondary_sensor ?? undefined,
+      forecast_sensor_prefix: config.forecast_sensor_prefix ? (config.forecast_sensor_prefix.endsWith('_') ? config.forecast_sensor_prefix : `${config.forecast_sensor_prefix}_`) : undefined,
+      forecast_secondary_sensor_prefix: config.forecast_secondary_sensor_prefix ?? undefined,
+      icon_descriptor_sensor: config.icon_descriptor_sensor ?? undefined
     }
   }
 
@@ -1205,6 +1397,15 @@ export class ClockWeatherCard extends LitElement {
     if (config.forecast_type) return config.forecast_type
     if (config.hourly_forecast) return 'temp_hourly'
     return 'temp_daily'
+  }
+
+  private getIconState (state: string): string {
+    const iconDescriptor = this.config.icon_descriptor_sensor ? this.getStringState(this.config.icon_descriptor_sensor) : null
+    const iconDescriptorKey = iconDescriptor ? iconDescriptor.trim().toLowerCase().replace(/\s+/g, '_') : null
+    if (iconDescriptorKey && ICON_DESCRIPTOR_TO_WEATHER_STATE[iconDescriptorKey]) {
+      return ICON_DESCRIPTOR_TO_WEATHER_STATE[iconDescriptorKey]
+    }
+    return this.getWeatherStateWithRainOverride(state)
   }
 
   private getWeatherStateWithRainOverride (state: string): string {
@@ -1227,7 +1428,7 @@ export class ClockWeatherCard extends LitElement {
   }
 
   private getWeather (): Weather {
-    const weather = this.hass.states[this.config.entity] as unknown as Weather | undefined
+    const weather = this.hass.states[this.config.entity] as Weather | undefined
     if (!weather) {
       throw this.createError(`Weather entity "${this.config.entity}" could not be found.`)
     }
@@ -1235,8 +1436,8 @@ export class ClockWeatherCard extends LitElement {
   }
 
   private getCurrentTemperature (): number | null {
-    if (this.config.temperature_sensor) {
-      const temperatureSensor = this.hass.states[this.config.temperature_sensor] as TemperatureSensor | undefined
+    if (this.config.today_value_sensor) {
+      const temperatureSensor = this.hass.states[this.config.today_value_sensor] as TemperatureSensor | undefined
       const temp = temperatureSensor?.state ? parseFloat(temperatureSensor.state) : undefined
       const unit = temperatureSensor?.attributes.unit_of_measurement ?? this.getConfiguredTemperatureUnit()
       if (temp !== undefined && !isNaN(temp)) {
@@ -1258,19 +1459,6 @@ export class ClockWeatherCard extends LitElement {
       return this.toConfiguredTempWithoutUnit(unit, temp)
     }
     return null
-  }
-
-  private getCurrentHumidity (): number | null {
-    if (this.config.humidity_sensor) {
-      const humiditySensor = this.hass.states[this.config.humidity_sensor] as HumiditySensor | undefined
-      const humid = humiditySensor?.state ? parseFloat(humiditySensor.state) : undefined
-      if (humid !== undefined && !isNaN(humid)) {
-        return humid
-      }
-    }
-
-    // Return weather humidity if the code could not extract humidity from the humidity_sensor
-    return this.getWeather().attributes.humidity ?? null
   }
 
   private getApparentTemperature (): number | null {
@@ -1345,10 +1533,6 @@ export class ClockWeatherCard extends LitElement {
     return this.config.locale ?? this.hass.locale.language ?? 'en-GB'
   }
 
-  private date (): string {
-    return this.toZonedDate(this.currentDate).toFormat(this.config.date_pattern)
-  }
-
   private time (date: DateTime = this.currentDate): string {
     if (this.config.time_pattern) {
       return this.toZonedDate(date).toFormat(this.config.time_pattern)
@@ -1387,58 +1571,69 @@ export class ClockWeatherCard extends LitElement {
     return { minTemp, maxTemp }
   }
 
-  private getMaxColOneChars (): number {
+  private getMaxColOneChars (hourly = false): number {
+    if (hourly) {
+      return this.time(DateTime.now()).length
+    }
     const dayLengths = [1, 2, 3, 4, 5, 6, 7].map(d => this.localize(`day.${d}`).length)
-    const sampleTime = this.time(DateTime.now())
-    return Math.max(...dayLengths, sampleTime.length)
+    const baseTimeLength = DateTime.now().toFormat('HH:mm').length
+    return Math.max(...dayLengths, baseTimeLength)
   }
 
-  private getMaxTempChars (minTemp: number, maxTemp: number): number {
+  private getMaxTempChars (minTemp: number, maxTemp: number): { minColChars: number, maxColChars: number } {
     const forecastType = this.config.forecast_type
 
-    if (forecastType === 'rain_daily' && this.config.rain_sensor_prefix) {
-      const rainSamples: number[] = []
+    const prefix = this.config.forecast_sensor_prefix
+
+    if (forecastType === 'rain_daily' && prefix) {
+      const minSamples: number[] = []
+      const maxSamples: number[] = []
       for (let i = 0; i < this.config.forecast_rows; i++) {
-        const maxVal = this.getNumericState(`${this.config.rain_sensor_prefix}amount_max_${i}`) ?? 0
-        const chanceVal = this.getNumericState(`${this.config.rain_sensor_prefix}chance_${i}`) ?? 0
-        rainSamples.push(`${maxVal} mm`.length, `${Math.round(chanceVal)}%`.length)
+        const maxVal = this.getNumericState(`${prefix}amount_max_${i}`) ?? 0
+        const chanceVal = this.getNumericState(`${prefix}chance_${i}`) ?? 0
+        minSamples.push(`${Math.round(chanceVal)}%`.length)
+        maxSamples.push(`${maxVal} mm`.length)
       }
-      return Math.max(...rainSamples)
+      return { minColChars: Math.max(...minSamples), maxColChars: Math.max(...maxSamples) }
     }
 
-    if (forecastType === 'uv_daily' && this.config.uv_sensor_prefix) {
-      const uvSamples: number[] = []
+    if (forecastType === 'uv_daily' && prefix) {
+      const minSamples: number[] = []
+      const maxSamples: number[] = []
       for (let i = 0; i < this.config.forecast_rows; i++) {
-        const maxIndex = this.getNumericState(`${this.config.uv_sensor_prefix}max_index_${i}`) ?? 0
-        const startTimeStr = this.getStringState(`${this.config.uv_sensor_prefix}start_time_${i}`)
-        const endTimeStr = this.getStringState(`${this.config.uv_sensor_prefix}end_time_${i}`)
+        const maxIndex = this.getNumericState(`${prefix}max_index_${i}`) ?? 0
+        const startTimeStr = this.getStringState(`${prefix}start_time_${i}`)
+        const endTimeStr = this.getStringState(`${prefix}end_time_${i}`)
         const startHour = startTimeStr ? DateTime.fromISO(startTimeStr).toLocal().hour : 6
         const endHour = endTimeStr ? Math.ceil(DateTime.fromISO(endTimeStr).toLocal().hour + DateTime.fromISO(endTimeStr).toLocal().minute / 60) : 18
         const timeRange = `${Math.max(6, startHour)}–${Math.min(18, endHour)}`
-        uvSamples.push(`${maxIndex} UV`.length, timeRange.length)
+        minSamples.push(timeRange.length)
+        maxSamples.push(`${maxIndex} UV`.length)
       }
-      return Math.max(...uvSamples)
+      return { minColChars: Math.max(...minSamples), maxColChars: Math.max(...maxSamples) }
     }
 
-    if (forecastType === 'bushfire_daily' && this.config.bushfire_sensor_prefix) {
-      const bushfireSamples: number[] = ['NONE', 'MOD', 'HIGH', 'EXT', 'CAT'].map(s => s.length)
-      bushfireSamples.push('0–24'.length)
-      return Math.max(...bushfireSamples)
+    if (forecastType === 'bushfire_daily' && prefix) {
+      const maxSamples: number[] = ['NONE', 'MOD', 'HIGH', 'EXT', 'CAT'].map(s => s.length)
+      return { minColChars: '∀ hrs'.length, maxColChars: Math.max(...maxSamples) }
     }
 
-    if (forecastType === 'wind_daily' && this.config.wind_sensor_prefix) {
-      const windSamples: number[] = []
+    if (forecastType === 'wind_daily' && prefix) {
+      const minSamples: number[] = []
+      const maxSamples: number[] = []
       for (let i = 0; i < this.config.forecast_rows; i++) {
-        const maxVal = this.getNumericState(`${this.config.wind_sensor_prefix}speed_max_${i}`) ?? 0
-        const minVal = this.getNumericState(`${this.config.wind_sensor_prefix}speed_min_${i}`) ?? 0
-        windSamples.push(`${Math.round(maxVal)} km/h`.length, `${Math.round(minVal)} km/h`.length)
+        const maxVal = this.getNumericWithFallback(prefix, 'speed_max_', i) ?? 0
+        const direction = this.getStringWithFallback(prefix, 'dominant_direction_abbreviation_', i) ?? ''
+        minSamples.push(`${Math.round(maxVal)} km/h`.length)
+        maxSamples.push(direction.length)
       }
-      return Math.max(...windSamples)
+      return { minColChars: Math.max(...minSamples), maxColChars: Math.max(...maxSamples) }
     }
 
     const unit = this.getConfiguredTemperatureUnit()
     const tempSamples = [minTemp, maxTemp, -minTemp, -maxTemp].map(t => `${t}${unit}`.length)
-    return Math.max(...tempSamples)
+    const chars = Math.max(...tempSamples)
+    return { minColChars: chars, maxColChars: chars }
   }
 
   private getIconAnimationKind (): 'static' | 'animated' {
