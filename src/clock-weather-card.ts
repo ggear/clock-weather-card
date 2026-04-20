@@ -231,6 +231,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   ],
   rain: [
     'It\s so rainy (quiet)!',
+    'Take the red pill, see how rainy it really is',
     'Blessed by the rain',
     'Help me if you can I am feelin rainy',
     'Rain ... not Amaze! Amaze! Amaze!',
