@@ -36,13 +36,14 @@ import { DateTime } from 'luxon'
 
 const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   sunny: [
+    'It\s so sunny (quiet)!',
     'Suns out, guns out',
     'Blessed by the sun',
     'Here comes the sun, and it\'s alright',
     'All you need is sun',
     'Sunny! Amaze! Amaze! Amaze!',
-    '"It\'s as warm as my lobster thermidor" -Batman',
-    'Honey, where are my pants? Outside in this sun',
+    '"It\'s lobster thermidor hot" -Batman',
+    '"It\'s gorgeous out. Just gorgeous" -Rhys',
     'Everything is awesome(ly) sunny',
     'This sun\'s gonna get stuck in your head',
     '17 days? We wont\'t last 17 hours in this sun',
@@ -65,7 +66,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Solar panels will be happy today!',
     'I am walking on sunshine, yeah, yeah',
     'Sunshine inventory full, Tamagotchi mad',
-    'Where\'s my sunglasses (pants)?',
+    'Honey, where\'s my sunglasses (pants)?',
     'Marsupalami, it\'s Graham for sunshine',
     'To infinity and sunny beyond',
     'That\'s not sunshine. THAT\'S sunshine',
@@ -104,9 +105,8 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Creeper? Aww man, too sunny to care',
     'This is fine, said Steve, squinting',
     'Diamonds are forever, sunshine is better',
-    'Open the pod bay doors HAL, it\'s gorgeous out',
-    'Steve has left the mine, it\'s gorgeous out',
-    'Don\'t mine at night, mine in this sunshine',
+    'Open the pod bay doors HAL, it\'s sunny out',
+    'Steve has left the mine, it\'s sunny out',
     'Eve scanned for clouds, found none',
     'As you wish, it\'s sunny',
     'Life is pain, sunshine is not',
@@ -118,6 +118,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'I feel the need, the need for sun'
   ],
   clear: [
+    'It\s so clear (quiet)!',
     'The Cosmos says - "Look up"',
     'Stars out! Amaze! Amaze! Amaze!',
     'Sweet Caroline, look at those stars',
@@ -153,8 +154,9 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     '700 quintillion (10¹⁸) systems to see tonight'
   ],
   partly_cloudy: [
+    'It\s so cloudy (quiet)!',
+    'Clouds ... not Amaze! Amaze! Amaze!',
     'Houston, we have a bit of cloud problem',
-    'Clouds ... not really Amaze! Amaze! Amaze!',
     'You\'ve got mail, I mean clouds',
     'You know why (it\'s cloudy)',
     'Every barn, every outhouse, find that sun',
@@ -177,7 +179,9 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Is it mostly clear or partly cloudy?'
   ],
   cloudy: [
-    'So many clouds ... No Amaze! Amaze! Amaze!',
+    'It\s so cloudy (quiet)!',
+    'Honey, where\'s my sun (pants)?',
+    'Clouds ... not Amaze! Amaze! Amaze!',
     'Yesterday, the clouds seemed so far away',
     'I\'m (Lego) Batman, I don\'t need sunshine',
     '"I only work in black/grey skies" -Batman',
@@ -206,7 +210,8 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'To infinity and cloudy beyond!'
   ],
   drizzle: [
-    'Drizzle ... No Amaze! Amaze! Amaze!',
+    'It\s so drizzly (quiet)!',
+    'Drizzle ... not Amaze! Amaze! Amaze!',
     'This drizzle\'s gonna get stuck in your head',
     'Houston, we have a bit of drizzle problem',
     'You know why (it\'s drizzly)',
@@ -225,9 +230,10 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Dad wouldn\'t stress, but would Nanny?'
   ],
   rain: [
+    'It\s so rainy (quiet)!',
     'Blessed by the rain',
     'Help me if you can I am feelin rainy',
-    'Rain ... No Amaze! Amaze! Amaze!',
+    'Rain ... not Amaze! Amaze! Amaze!',
     'Blame it on the rain, yeah, yeah',
     'This rain\'s gonna get stuck in your head',
     'Houston, we have a rain problem',
@@ -250,7 +256,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'I feel the need, the need for rain'
   ],
   thunderstorm: [
-    'Zeus is booked in today, Mums favourite!',
+    'Zeus is booked in today, Mum\'s favourite!',
     'Red Alert! Thunderstorm, not gaming time!',
     'I\'ve got a bad feeling about this weather'
   ],
