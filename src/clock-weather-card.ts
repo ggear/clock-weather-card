@@ -119,6 +119,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   ],
   clear: [
     'It\s so clear (quiet)!',
+    'Do not go gentle into that good night',
     'The Cosmos says - "Look up"',
     'Stars out! Amaze! Amaze! Amaze!',
     'Sweet Caroline, look at those stars',
@@ -211,6 +212,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   ],
   drizzle: [
     'It\s so drizzly (quiet)!',
+    'TARS, what\'s your rain setting? 90%',
     'Drizzle ... not Amaze! Amaze! Amaze!',
     'This drizzle\'s gonna get stuck in your head',
     'Houston, we have a bit of drizzle problem',
@@ -231,6 +233,11 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   ],
   rain: [
     'It\s so rainy (quiet)!',
+    'Time is relative, so is rain',
+    'You\'ve got to leave something behind in this rain',
+    'TARS, what\'s your rain setting? 90%',
+    '"I won\'t leave you in the rain... Dr Brand" -TARS'
+    '"Slaves for my rainy robot colony" -TARS',
     'Take the red pill, see how rainy it really is',
     'Blessed by the rain',
     'Help me if you can I am feelin rainy',
