@@ -156,6 +156,8 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   ],
   partly_cloudy: [
     'It\s so cloudy (quiet)!',
+    'Honey, who shrunk the sun?',
+    'Where we\'re going, we don\'t need clouds',
     'Clouds ... not Amaze! Amaze! Amaze!',
     'Houston, we have a bit of cloud problem',
     'You\'ve got mail, I mean clouds',
@@ -181,6 +183,8 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   ],
   cloudy: [
     'It\s so cloudy (quiet)!',
+    'Honey, who shrunk the sun?',
+    'Where we\'re going, we don\'t need clouds',
     'Honey, where\'s my sun (pants)?',
     'Clouds ... not Amaze! Amaze! Amaze!',
     'Yesterday, the clouds seemed so far away',
@@ -212,6 +216,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   ],
   drizzle: [
     'It\s so drizzly (quiet)!',
+    'Where\'s my umbrella (pants)?',
     'TARS, what\'s your rain setting? 90%',
     'Drizzle ... not Amaze! Amaze! Amaze!',
     'This drizzle\'s gonna get stuck in your head',
@@ -233,6 +238,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   ],
   rain: [
     'It\s so rainy (quiet)!',
+    'Where\'s my umbrella (pants)?',
     'Time is relative, so is rain',
     'You\'ve got to leave something behind in this rain',
     'TARS, what\'s your rain setting? 90%',
