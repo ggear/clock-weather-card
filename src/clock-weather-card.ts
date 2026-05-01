@@ -37,6 +37,7 @@ import { DateTime } from 'luxon'
 const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   sunny: [
     'It\s so sunny (quiet)!',
+    'Great Scott, it\'s sunny!"',
     'Suns out, guns out',
     'Blessed by the sun',
     'Here comes the sun, and it\'s alright',
@@ -119,6 +120,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   ],
   clear: [
     'It\s so clear (quiet)!',
+    'Great Scott, it\'s a clear night!"',
     'Do not go gentle into that good night',
     'The Cosmos says - "Look up"',
     'Stars out! Amaze! Amaze! Amaze!',
@@ -156,6 +158,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   ],
   partly_cloudy: [
     'It\s so cloudy (quiet)!',
+    'Great Scott, it\'s (partly) cloudy!"',
     'Honey, who shrunk the sun?',
     'Where we\'re going, we don\'t need clouds',
     'Clouds ... not Amaze! Amaze! Amaze!',
@@ -183,6 +186,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   ],
   cloudy: [
     'It\s so cloudy (quiet)!',
+    'Great Scott, it\'s cloudy!"',
     'Honey, who shrunk the sun?',
     'Where we\'re going, we don\'t need clouds',
     'Honey, where\'s my sun (pants)?',
@@ -216,6 +220,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   ],
   drizzle: [
     'It\s so drizzly (quiet)!',
+    'Great Scott, it\'s drizzly!"',
     'Where\'s my umbrella (pants)?',
     'TARS, what\'s your rain setting? 90%',
     'Drizzle ... not Amaze! Amaze! Amaze!',
@@ -238,6 +243,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   ],
   rain: [
     'It\s so rainy (quiet)!',
+    'Great Scott, it\'s rainy!"',
     'Where\'s my umbrella (pants)?',
     'Time is relative, so is rain',
     'You\'ve got to leave something behind in this rain',
@@ -280,6 +286,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Leave the wind, take the cannoli',
     'It\'s not personal, it\'s just windy',
     'Frankly my dear, I don\'t give a gust',
+    'Great Scott, it\'s windy!"',
     'I\'ll be back ... once the wind dies down'
   ],
   hazy: [
