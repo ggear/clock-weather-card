@@ -1613,15 +1613,12 @@ export class ClockWeatherCard extends LitElement {
     const prefix = this.config.forecast_sensor_prefix
 
     if (forecastType === 'rain_daily' && prefix) {
-      const minSamples: number[] = []
       const maxSamples: number[] = []
       for (let i = 0; i < this.config.forecast_rows; i++) {
         const maxVal = this.getNumericState(`${prefix}amount_max_${i}`) ?? 0
-        const chanceVal = this.getNumericState(`${prefix}chance_${i}`) ?? 0
-        minSamples.push(`${Math.round(chanceVal)}%`.length)
         maxSamples.push(`${maxVal} mm`.length)
       }
-      return { minColChars: Math.max(...minSamples), maxColChars: Math.max(...maxSamples) }
+      return { minColChars: '100%'.length, maxColChars: Math.max(...maxSamples) }
     }
 
     if (forecastType === 'uv_daily' && prefix) {
