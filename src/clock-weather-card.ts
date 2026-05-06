@@ -248,7 +248,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Time is relative, so is rain',
     'You\'ve got to leave something behind in this rain',
     'TARS, what\'s your rain setting? 90%',
-    '"I won\'t leave you in the rain... Dr Brand" -TARS'
+    '"I won\'t leave you in the rain..." -TARS',
     '"Slaves for my rainy robot colony" -TARS',
     'Take the red pill, see how rainy it really is',
     'Blessed by the rain',
