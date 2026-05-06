@@ -1618,7 +1618,10 @@ export class ClockWeatherCard extends LitElement {
         const maxVal = this.getNumericState(`${prefix}amount_max_${i}`) ?? 0
         maxSamples.push(`${maxVal} mm`.length)
       }
-      return { minColChars: '100%'.length, maxColChars: Math.max(...maxSamples) }
+      const unit = this.getConfiguredTemperatureUnit()
+      const tempSamples = [minTemp, maxTemp, -minTemp, -maxTemp].map(t => `${t}${unit}`.length)
+      const tempChars = Math.max(...tempSamples)
+      return { minColChars: Math.max('100%'.length, tempChars), maxColChars: Math.max(...maxSamples) }
     }
 
     if (forecastType === 'uv_daily' && prefix) {
