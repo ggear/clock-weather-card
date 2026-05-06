@@ -405,6 +405,7 @@ export class ClockWeatherCard extends LitElement {
   @state() private error?: TemplateResult
   private forecastSubscriber?: () => Promise<void>
   private forecastSubscriberLock = false
+  private readonly _descriptionIndexCache = new Map<string, number>()
 
   constructor () {
     super()
@@ -961,7 +962,7 @@ export class ClockWeatherCard extends LitElement {
         const descriptorKey = iconDescriptor ? iconDescriptor.trim().toLowerCase().replace(/\s+/g, '_') : text.split(',')[0].trim().toLowerCase().replace(/\s+/g, '_')
         const category = ICON_DESCRIPTOR_TO_CATEGORY[descriptorKey]
         const descriptorDescriptions = category ? ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS[category] : null
-        const descriptorDescription = descriptorDescriptions ? descriptorDescriptions[this.getDescriptionIndex(descriptorDescriptions.length)] : null
+        const descriptorDescription = descriptorDescriptions ? descriptorDescriptions[this.getDescriptionIndex(category, descriptorDescriptions.length)] : null
         text = text.replace(/\.+$/, '')
         text += `\n${descriptorDescription ?? 'This weather is inscrutable, so do as Marsupalami would!'}`
       } else {
@@ -980,11 +981,14 @@ export class ClockWeatherCard extends LitElement {
     return html`${text}`
   }
 
-  private getDescriptionIndex (count: number): number {
-    const now = new Date()
-    const daySeed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate()
-    const sessionSalt = Math.floor(performance.timeOrigin)
-    return Math.abs(daySeed + sessionSalt) % count
+  private getDescriptionIndex (category: string, count: number): number {
+    if (!this._descriptionIndexCache.has(category)) {
+      const now = new Date()
+      const daySeed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate()
+      const sessionSalt = Math.floor(performance.timeOrigin)
+      this._descriptionIndexCache.set(category, Math.abs(daySeed + sessionSalt) % count)
+    }
+    return this._descriptionIndexCache.get(category)!
   }
 
   private getStringState (entityId: string): string | null {
