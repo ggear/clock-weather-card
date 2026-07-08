@@ -1070,9 +1070,11 @@ export class ClockWeatherCard extends LitElement {
   }
 
   private renderUvBar (startHour: number, endHour: number, maxIndex: number, isToday: boolean): TemplateResult {
-    const showBar = maxIndex > 0 && endHour > startHour
+    // UV < 3 (Low) shows just the empty base-blue track, like the rain bar at 0,
+    // rather than a washed-out coloured fill.
+    const showBar = maxIndex >= 3 && endHour > startHour
     const dotValue = isToday ? DateTime.now().hour + DateTime.now().minute / 60 : null
-    const uvLevel = maxIndex <= 2 ? 1 : maxIndex <= 5 ? 2 : maxIndex <= 7 ? 3 : maxIndex <= 10 ? 4 : 5
+    const uvLevel = maxIndex <= 5 ? 2 : maxIndex <= 7 ? 3 : maxIndex <= 10 ? 4 : 5
     return this.renderBar(showBar, (startHour / 24) * 100, (endHour / 24) * 100, startHour / 24, this.solidGradient(this.getSeverityColor(uvLevel)), dotValue, 0, 24)
   }
 
