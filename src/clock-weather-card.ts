@@ -36,7 +36,7 @@ import { DateTime } from 'luxon'
 
 const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   sunny: [
-    'It\s so sunny (quiet)!',
+    'It\'s so sunny (quiet)!',
     'Is this room for sun?',
     'Great Scott, it\'s sunny!"',
     'Suns out, guns out',
@@ -62,7 +62,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Skip the Vitamin D tablet today!',
     '"It\'s my time to shine" -Sun',
     'Get our squint on',
-    'Its like a Windows background out there',
+    'It\'s like a Windows background out there',
     'Engage sunshine. Sunshine engaged',
     'If atop did weather, it would say Sunny',
     'Solar panels will be happy today!',
@@ -117,7 +117,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'I feel the need, the need for sun'
   ],
   clear: [
-    'It\s so clear (quiet)!',
+    'It\'s so clear (quiet)!',
     'Is this room for stars?',
     'Where my stars?',
     'Great Scott, it\'s a clear night!"',
@@ -143,7 +143,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Best seat in the universe, look up',
     'Ziggy Stardust would approve tonight',
     'The truth is out there, so are the stars',
-    'Its gone all Interstellar up there. STELLA!',
+    'It\'s gone all Interstellar up there. STELLA!',
     'Phone home tonight, skies are clear -ET',
     'We\'re gonna need a bigger telescope',
     'Starman waiting in the sky',
@@ -157,7 +157,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     '700 quintillion (10¹⁸) systems to see tonight'
   ],
   partly_cloudy: [
-    'It\s so cloudy (quiet)!',
+    'It\'s so cloudy (quiet)!',
     'Is this room for clouds?',
     'Where my sunshine?',
     'Great Scott, it\'s (partly) cloudy!"',
@@ -187,7 +187,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Is it mostly clear or partly cloudy?'
   ],
   cloudy: [
-    'It\s so cloudy (quiet)!',
+    'It\'s so cloudy (quiet)!',
     'Is this room for clouds?',
     'Where my sunshine?',
     'Great Scott, it\'s cloudy!"',
@@ -223,7 +223,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'To infinity and cloudy beyond!'
   ],
   drizzle: [
-    'It\s so drizzly (quiet)!',
+    'It\'s so drizzly (quiet)!',
     'Is this room for drizzle?',
     'Where my drizzle?',
     'Great Scott, it\'s drizzly!"',
@@ -248,7 +248,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Dad wouldn\'t stress, but would Nanny?'
   ],
   rain: [
-    'It\s so rainy (quiet)!',
+    'It\'s so rainy (quiet)!',
     'Is this room for rain?',
     'Where my rain?',    
     'Great Scott, it\'s rainy!"',
@@ -313,7 +313,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Snow! In Darlington? This has to be a bug!'
   ],
   tropical_cyclone: [
-    'Its going to get crazy, take cover'
+    'It\'s going to get crazy, take cover'
   ]
 }
 
