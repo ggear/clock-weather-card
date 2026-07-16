@@ -157,6 +157,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     '700 quintillion (10¹⁸) systems to see tonight'
   ],
   partly_cloudy: [
+    'Well that (cloud) can wait!',
     'It\'s so cloudy (quiet)!',
     'Is this room for clouds?',
     'Where my sunshine?',
@@ -187,6 +188,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Is it mostly clear or partly cloudy?'
   ],
   cloudy: [
+    'Well that (cloud) can wait!',
     'It\'s so cloudy (quiet)!',
     'Is this room for clouds?',
     'Where my sunshine?',
@@ -223,6 +225,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'To infinity and cloudy beyond!'
   ],
   drizzle: [
+    'Well that (drizzle) can wait!',
     'It\'s so drizzly (quiet)!',
     'Is this room for drizzle?',
     'Where my drizzle?',
@@ -248,6 +251,7 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Dad wouldn\'t stress, but would Nanny?'
   ],
   rain: [
+    'Well that (rain) can wait!',
     'It\'s so rainy (quiet)!',
     'Is this room for rain?',
     'Where my rain?',    
