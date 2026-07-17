@@ -7,6 +7,7 @@ import {
   hasAction,
   type ActionHandlerEvent,
   handleAction,
+  fireEvent,
   TimeFormat,
   type ActionConfig
 } from 'custom-card-helpers' // This is a community maintained npm module with common helper functions/types. https://github.com/custom-cards/custom-card-helpers
@@ -1405,9 +1406,20 @@ export class ClockWeatherCard extends LitElement {
   }
 
   private handleAction (ev: ActionHandlerEvent): void {
-    if (this.hass && this.config && ev.detail.action) {
-      handleAction(this, this.hass, this.config, ev.detail.action)
+    if (!this.hass || !this.config || !ev.detail.action) {
+      return
     }
+    const action = ev.detail.action
+    const actionConfig = (action === 'hold'
+      ? this.config.hold_action
+      : action === 'double_tap'
+        ? this.config.double_tap_action
+        : this.config.tap_action) as ActionConfig | undefined
+    if (actionConfig?.action === 'more-info' && actionConfig.entity) {
+      fireEvent(this, 'hass-more-info', { entityId: actionConfig.entity })
+      return
+    }
+    handleAction(this, this.hass, this.config, action)
   }
 
   private mergeConfig (config: ClockWeatherCardConfig): MergedClockWeatherCardConfig {
