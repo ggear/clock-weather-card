@@ -37,6 +37,8 @@ import { DateTime } from 'luxon'
 
 const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
   sunny: [
+    'Sunny. Statement.',
+    'Sunny - BIG REALISATION!',
     'It\'s so sunny (quiet)!',
     'Is this room for sun?',
     'Great Scott, it\'s sunny!"',
@@ -118,6 +120,8 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'I feel the need, the need for sun'
   ],
   clear: [
+    'Clear. Statement.',
+    'Clear - BIG REALISATION!',
     'It\'s so clear (quiet)!',
     'Is this room for stars?',
     'Where my stars?',
@@ -158,6 +162,8 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     '700 quintillion (10¹⁸) systems to see tonight'
   ],
   partly_cloudy: [
+    'Cloudy. Question.',
+    'Sort-a-cloudy - BIG REALISATION!',
     'Well that (cloud) can wait!',
     'It\'s so cloudy (quiet)!',
     'Is this room for clouds?',
@@ -189,6 +195,8 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Is it mostly clear or partly cloudy?'
   ],
   cloudy: [
+    'Cloudy. Statement.',
+    'Cloudy - BIG REALISATION!',    
     'Well that (cloud) can wait!',
     'It\'s so cloudy (quiet)!',
     'Is this room for clouds?',
@@ -226,6 +234,8 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'To infinity and cloudy beyond!'
   ],
   drizzle: [
+    'Drizzle. Question.',
+    'Sort-a-rainy - BIG REALISATION!',
     'Well that (drizzle) can wait!',
     'It\'s so drizzly (quiet)!',
     'Is this room for drizzle?',
@@ -252,6 +262,8 @@ const ICON_DESCRIPTOR_CATEGORY_DESCRIPTIONS: Record<string, string[]> = {
     'Dad wouldn\'t stress, but would Nanny?'
   ],
   rain: [
+    'Rain. Statement.',
+    'Rainy - BIG REALISATION!',
     'Well that (rain) can wait!',
     'It\'s so rainy (quiet)!',
     'Is this room for rain?',
